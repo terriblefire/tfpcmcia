@@ -12651,6 +12651,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="381" y1="2.54" x2="381" y2="-5.08" width="0.1524" layer="91"/>
 <label x="383.54" y="-2.54" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="IC1" gate="G$1" pin="BOOT0"/>
+<wire x1="119.38" y1="119.38" x2="119.38" y2="142.24" width="0.1524" layer="91"/>
+<label x="119.38" y="124.46" size="1.778" layer="95" rot="R90"/>
+</segment>
 </net>
 <net name="D3" class="0">
 <segment>
