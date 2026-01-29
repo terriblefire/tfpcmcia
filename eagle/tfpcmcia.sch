@@ -12891,6 +12891,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="20.32" y1="71.12" x2="0" y2="71.12" width="0.1524" layer="91"/>
 <label x="7.62" y="71.12" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="IC1" gate="G$1" pin="PA2"/>
+<wire x1="96.52" y1="40.64" x2="63.5" y2="40.64" width="0.1524" layer="91"/>
+<label x="76.2" y="40.64" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="VCC" class="0">
 <segment>
