@@ -42,7 +42,7 @@
 - Place as close as possible to pin 8 (VDD)
 - **Optional:** 0.1µF capacitor for better high-frequency response
 
-**Schematic Status:** ✓ Verify placement on PCB layout
+**Schematic Status:** ✓ Confirmed - 2x 1µF capacitors present
 
 #### 2. Unused Pin Handling
 **SIO[2] (Pin 3) - Write Protect:**
@@ -241,8 +241,8 @@ void spi_ram_write(uint32_t address, const uint8_t *buffer, uint16_t length) {
 
 ## Schematic Review Checklist
 
-- [ ] 1µF decoupling capacitor on VDD pin (as close as possible)
-- [ ] Optional 0.1µF decoupling capacitor
+- [x] 1µF decoupling capacitor on VDD pin (as close as possible) ✓
+- [x] Additional 1µF capacitor added for better stability ✓
 - [x] Pull-up resistor on SIO[2] (pin 3) to VCC33 ✓
 - [x] Pull-up resistor on SIO[3] (pin 7) to VCC33 ✓
 - [x] SPI signals routed to CH32V307 ✓
@@ -266,13 +266,18 @@ void spi_ram_write(uint32_t address, const uint8_t *buffer, uint16_t length) {
 
 - Note states: "Using the footprint from a standard SPI ROM but this will work for the APS6404L"
   - ✓ Verified: Pin assignments match standard SPI ROM footprints
-  - ⚠️ Must verify pull-ups on unused pins (SIO[2], SIO[3])
+  - ✓ Confirmed: Pull-ups present on unused pins (SIO[2], SIO[3])
+  - ✓ Confirmed: Additional 1µF decoupling capacitor added
 
 ## Status
 
-**Hardware:** Design verified compatible with CH32V307
+**Hardware:** ✓ Design verified compatible with CH32V307
+- All decoupling capacitors present (2x 1µF)
+- Pull-ups on unused SPI pins confirmed
+- All SPI signals properly routed
+
 **Firmware:** Implementation plan complete, ready for coding
-**Testing:** Awaiting PCB review and firmware implementation
+**Testing:** Ready for PCB fabrication and firmware implementation
 
 ---
 Document created: 2026-01-29
