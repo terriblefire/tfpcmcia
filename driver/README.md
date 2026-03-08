@@ -55,6 +55,19 @@ mame a1200 -pcmcia tfpcmcia -hard2 sdcard.hdf -debug
 
 The MAME emulation (`tfpcmcia.cpp`) implements the full register set, SPI SD card interface, boot ROM, and SPIRAM switching. The boot ROM binary is loaded from the MAME ROM path.
 
+To see the driver's serial debug output (`kprintf`), add a null modem on the RS-232 port and listen with netcat:
+
+```sh
+mame a1200 -pcmcia tfpcmcia -hard2 sdcard.hdf -debug \
+  -rs232 null_modem -bitb socket.127.0.0.1:1234
+```
+
+In another terminal:
+
+```sh
+nc -l 1234
+```
+
 To build a new ROM and update MAME's copy:
 
 ```sh
