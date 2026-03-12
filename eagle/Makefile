@@ -6,9 +6,11 @@ VENV_DIR = .venv
 VENV_MARKER = $(VENV_DIR)/.installed
 PYTHON = $(VENV_DIR)/bin/python
 PIP = $(VENV_DIR)/bin/pip
+NETLIST_SCRIPT = generate_netlist.py
 
 # Find the .sch file
 SCH_FILE = $(wildcard *.sch)
+NET_FILE = $(SCH_FILE:.sch=.net)
 
 # Variables for CAM output (Gerber generation)
 BOARDPREFIX := tfpcmcia
@@ -26,7 +28,7 @@ EAGLE_PDF_DOCKER := docker run --rm --platform linux/amd64 -v $(CURDIR):/work -w
 
 # Default target
 .PHONY: all
-all: $(GERBERS).zip 
+all: $(NET_FILE) $(GERBERS).zip
 
 # Create virtual environment and install dependencies
 $(VENV_MARKER):
@@ -36,6 +38,15 @@ $(VENV_MARKER):
 	$(PIP) install --upgrade pip
 	$(PIP) install lxml 
 	@touch $(VENV_MARKER)
+
+# Generate netlist from schematic
+.PHONY: netlist
+netlist: $(NET_FILE)
+
+$(NET_FILE): $(SCH_FILE) $(VENV_MARKER) $(NETLIST_SCRIPT)
+	@echo "Generating netlist from $(SCH_FILE)..."
+	$(PYTHON) $(NETLIST_SCRIPT) $(SCH_FILE) $(NET_FILE)
+	@echo "Netlist generated: $(NET_FILE)"
 
 $(DRILL_CAMFILE): $(CAMFILE)
 	python3 extract_drill_cam.py $(CAMFILE) $(DRILL_CAMFILE)
@@ -90,7 +101,12 @@ $(BOARDPREFIX)_cpl.csv: $(BOARD) extract_cpl.py
 
 # Clean generated files
 .PHONY: clean
-clean: clean-gerbers clean-pdf clean-bom clean-cpl
+clean: clean-gerbers clean-pdf clean-bom clean-cpl clean-netlist
+
+.PHONY: clean-netlist
+clean-netlist:
+	rm -f $(NET_FILE)
+	@echo "Cleaned netlist files"
 
 .PHONY: clean-pdf
 clean-pdf:
@@ -125,7 +141,8 @@ help:
 	@echo "Eagle CAM Output Makefile"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all           - Generate Everything" 
+	@echo "  all           - Generate Everything"
+	@echo "  netlist       - Generate netlist from schematic"
 	@echo "  gerbers       - Generate Gerber files and create ZIP archive"
 	@echo "  camfiles      - Generate Gerber files only (no ZIP)"
 	@echo "  pdf           - Generate PDF schematic (using Docker)"
@@ -133,6 +150,7 @@ help:
 	@echo "  cpl           - Generate Component Placement List CSV from board"
 	@echo "  assembly      - Generate both BOM and CPL for assembly"
 	@echo "  clean         - Remove all generated files"
+	@echo "  clean-netlist - Remove netlist file"
 	@echo "  clean-gerbers - Remove Gerber files and directories"
 	@echo "  clean-pdf     - Remove PDF files"
 	@echo "  clean-bom     - Remove BOM files"
@@ -141,4 +159,4 @@ help:
 	@echo "  help          - Show this help message"
 	@echo ""
 	@echo "Input:  $(SCH_FILE), $(BOARD)"
-	@echo "Output: $(GERBERS).zip, $(PDF_FILE)"
+	@echo "Output: $(NET_FILE), $(GERBERS).zip, $(PDF_FILE)"

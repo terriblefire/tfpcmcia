@@ -2,6 +2,20 @@
 claude.md
 .claude
 
+# Firmware build outputs
+firmware/*.elf
+firmware/*.bin
+firmware/*.hex
+firmware/*.map
+firmware/**/*.o
+
+# MounRiver Studio installer (large binary, not for repo)
+*.tar.xz
+*.tar.gz
+
+# macOS
+.DS_Store
+
 # Backup files
 *.s#?
 *.b#?

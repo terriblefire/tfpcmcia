@@ -12164,7 +12164,7 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <part name="DEBUG" library="microbuilder" deviceset="HEADER-1X6" device="ROUND" value="JTAG"/>
 <part name="J2" library="SamacSys_Parts" deviceset="MSD-11-A" device=""/>
 <part name="RN1" library="CAY16-103J4LF" deviceset="CAY16-103J4LF" device="" value="CAY16-472J4LF"/>
-<part name="IC3" library="SparkFun-IC-Memory" deviceset="SPI_FLASH-X25XX" device="SMD" value="32M SPI Flash"/>
+<part name="IC3" library="SparkFun-IC-Memory" deviceset="SPI_FLASH-X25XX" device="SMD" value="APS6404L"/>
 <part name="GND1" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="NRST" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X1" device="" package3d_urn="urn:adsk.eagle:package:22485/2" value="NRST"/>
 <part name="C4" library="eagle-ltspice" deviceset="C" device="C0603" value="100nF"/>

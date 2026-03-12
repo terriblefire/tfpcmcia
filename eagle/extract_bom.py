@@ -39,13 +39,8 @@ def parse_schematic(sch_file: str) -> List[Dict[str, str]]:
         if library in ['supply1', 'supply2', 'frames', 'testpad']:
             continue
 
-        # Get footprint from device/package
-        footprint = ''
-        device_element = part.find('device')
-        if device_element is not None:
-            package = device_element.get('package', '')
-            if package:
-                footprint = package
+        # Get footprint from device attribute (e.g., "C1206", "SOT223", etc.)
+        footprint = device
 
         # Get attributes (like LCSC part number)
         lcsc = ''
