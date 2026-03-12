@@ -2,6 +2,13 @@
 claude.md
 .claude
 
+# Eagle generated outputs (produced by Makefile / ULP scripts)
+eagle/*.net
+eagle/*.csv
+eagle/*.scr
+eagle/*.zip
+eagle/tfpcmcia_*/
+
 # Firmware build outputs
 firmware/*.elf
 firmware/*.bin
