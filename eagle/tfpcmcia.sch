@@ -12140,6 +12140,252 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 </deviceset>
 </devicesets>
 </library>
+<library name="SparkFun-Retired" urn="urn:adsk.eagle:library:533">
+<description>&lt;h3&gt;SparkFun Electronics' Retired foot prints&lt;/h3&gt;
+In this library you'll find all manner of retired footprints for resistors, capacitors, board names, ICs, etc., that are &lt;b&gt; no longer used&lt;/b&gt; in our catalog.
+&lt;br&gt;
+&lt;br&gt;
+We've spent an enormous amount of time creating and checking these footprints and parts, but it is &lt;b&gt; the end user's responsibility&lt;/b&gt; to ensure correctness and suitablity for a given componet or application. 
+&lt;br&gt;
+&lt;br&gt;If you enjoy using this library, please buy one of our products at &lt;a href=" www.sparkfun.com"&gt;SparkFun.com&lt;/a&gt;.
+&lt;br&gt;
+&lt;br&gt;
+&lt;b&gt;Licensing:&lt;/b&gt; Creative Commons ShareAlike 4.0 International - https://creativecommons.org/licenses/by-sa/4.0/ 
+&lt;br&gt;
+&lt;br&gt;
+You are welcome to use this library for commercial purposes. For attribution, we ask that when you begin to sell your device using our footprint, you email us with a link to the product being sold. We want bragging rights that we helped (in a very small part) to create your 8th world wonder. We would like the opportunity to feature your device on our homepage.</description>
+<packages>
+<package name="1X02" urn="urn:adsk.eagle:footprint:41385669/1" library_version="2">
+<description>&lt;h3&gt;Plated Through Hole&lt;/h3&gt;
+&lt;p&gt;Specifications:
+&lt;ul&gt;&lt;li&gt;Pin count:2&lt;/li&gt;
+&lt;li&gt;Pin pitch:0.1"&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;
+&lt;p&gt;Example device(s):
+&lt;ul&gt;&lt;li&gt;CONN_02&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;</description>
+<wire x1="-0.635" y1="1.27" x2="0.635" y2="1.27" width="0.2032" layer="21"/>
+<wire x1="0.635" y1="1.27" x2="1.27" y2="0.635" width="0.2032" layer="21"/>
+<wire x1="1.27" y1="-0.635" x2="0.635" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="1.27" y1="0.635" x2="1.905" y2="1.27" width="0.2032" layer="21"/>
+<wire x1="1.905" y1="1.27" x2="3.175" y2="1.27" width="0.2032" layer="21"/>
+<wire x1="3.175" y1="1.27" x2="3.81" y2="0.635" width="0.2032" layer="21"/>
+<wire x1="3.81" y1="-0.635" x2="3.175" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="3.175" y1="-1.27" x2="1.905" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="1.905" y1="-1.27" x2="1.27" y2="-0.635" width="0.2032" layer="21"/>
+<wire x1="-1.27" y1="0.635" x2="-1.27" y2="-0.635" width="0.2032" layer="21"/>
+<wire x1="-0.635" y1="1.27" x2="-1.27" y2="0.635" width="0.2032" layer="21"/>
+<wire x1="-1.27" y1="-0.635" x2="-0.635" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="0.635" y1="-1.27" x2="-0.635" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="3.81" y1="0.635" x2="3.81" y2="-0.635" width="0.2032" layer="21"/>
+<pad name="1" x="0" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
+<pad name="2" x="2.54" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
+<rectangle x1="2.286" y1="-0.254" x2="2.794" y2="0.254" layer="51"/>
+<rectangle x1="-0.254" y1="-0.254" x2="0.254" y2="0.254" layer="51"/>
+<text x="-1.27" y="1.397" size="0.6096" layer="25" font="vector" ratio="20">&gt;NAME</text>
+<text x="-1.27" y="-2.032" size="0.6096" layer="27" font="vector" ratio="20">&gt;VALUE</text>
+</package>
+<package name="SJ_2S" urn="urn:adsk.eagle:footprint:41385670/1" library_version="2">
+<description>Small solder jumper with big paste layer so it will short during reflow.</description>
+<wire x1="0.8" y1="-1" x2="-0.8" y2="-1" width="0.1524" layer="21"/>
+<wire x1="0.8" y1="1" x2="1.1" y2="0.75" width="0.1524" layer="21" curve="-90"/>
+<wire x1="-1.1" y1="0.75" x2="-0.8" y2="1" width="0.1524" layer="21" curve="-90"/>
+<wire x1="-1.1" y1="-0.75" x2="-0.8" y2="-1" width="0.1524" layer="21" curve="90.114706"/>
+<wire x1="0.8" y1="-1" x2="1.1" y2="-0.75" width="0.1524" layer="21" curve="90"/>
+<wire x1="1.1" y1="-0.75" x2="1.1" y2="0.75" width="0.1524" layer="21"/>
+<wire x1="-1.1" y1="-0.75" x2="-1.1" y2="0.75" width="0.1524" layer="21"/>
+<wire x1="-0.8" y1="1" x2="0.8" y2="1" width="0.1524" layer="21"/>
+<smd name="1" x="-0.4119" y="0" dx="0.635" dy="1.27" layer="1"/>
+<smd name="2" x="0.4119" y="0" dx="0.635" dy="1.27" layer="1"/>
+<text x="-0.9498" y="1.27" size="0.4064" layer="25">&gt;NAME</text>
+<text x="-0.9498" y="-1.651" size="0.4064" layer="27">&gt;VALUE</text>
+<rectangle x1="-1.2192" y1="-1.143" x2="1.2192" y2="1.143" layer="31"/>
+</package>
+<package name="1X02_LOCK" urn="urn:adsk.eagle:footprint:41385671/1" library_version="2">
+<description>&lt;h3&gt;Plated Through Hole - Locking Footprint&lt;/h3&gt;
+Holes are staggered by 0.005" from center to hold pins while soldering. 
+&lt;p&gt;Specifications:
+&lt;ul&gt;&lt;li&gt;Pin count:2&lt;/li&gt;
+&lt;li&gt;Pin pitch:0.1"&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;
+&lt;p&gt;Example device(s):
+&lt;ul&gt;&lt;li&gt;CONN_02&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;</description>
+<wire x1="-0.635" y1="1.27" x2="0.635" y2="1.27" width="0.2032" layer="21"/>
+<wire x1="0.635" y1="1.27" x2="1.27" y2="0.635" width="0.2032" layer="21"/>
+<wire x1="1.27" y1="-0.635" x2="0.635" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="1.27" y1="0.635" x2="1.905" y2="1.27" width="0.2032" layer="21"/>
+<wire x1="1.905" y1="1.27" x2="3.175" y2="1.27" width="0.2032" layer="21"/>
+<wire x1="3.175" y1="1.27" x2="3.81" y2="0.635" width="0.2032" layer="21"/>
+<wire x1="3.81" y1="-0.635" x2="3.175" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="3.175" y1="-1.27" x2="1.905" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="1.905" y1="-1.27" x2="1.27" y2="-0.635" width="0.2032" layer="21"/>
+<wire x1="-1.27" y1="0.635" x2="-1.27" y2="-0.635" width="0.2032" layer="21"/>
+<wire x1="-0.635" y1="1.27" x2="-1.27" y2="0.635" width="0.2032" layer="21"/>
+<wire x1="-1.27" y1="-0.635" x2="-0.635" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="0.635" y1="-1.27" x2="-0.635" y2="-1.27" width="0.2032" layer="21"/>
+<wire x1="3.81" y1="0.635" x2="3.81" y2="-0.635" width="0.2032" layer="21"/>
+<pad name="1" x="-0.1778" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
+<pad name="2" x="2.7178" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
+<rectangle x1="-0.2921" y1="-0.2921" x2="0.2921" y2="0.2921" layer="51"/>
+<rectangle x1="2.2479" y1="-0.2921" x2="2.8321" y2="0.2921" layer="51"/>
+<text x="-1.27" y="1.397" size="0.6096" layer="25" font="vector" ratio="20">&gt;NAME</text>
+<text x="-1.27" y="-2.032" size="0.6096" layer="27" font="vector" ratio="20">&gt;VALUE</text>
+</package>
+<package name="SJ_2S-NO" urn="urn:adsk.eagle:footprint:41385672/1" library_version="2">
+<description>Small solder jumper with no paste layer so it will open after reflow.</description>
+<wire x1="0.8" y1="-1" x2="-0.8" y2="-1" width="0.2032" layer="21"/>
+<wire x1="0.8" y1="1" x2="1" y2="0.7" width="0.2032" layer="21" curve="-90"/>
+<wire x1="-1" y1="0.7" x2="-0.8" y2="1" width="0.2032" layer="21" curve="-90"/>
+<wire x1="-1" y1="-0.7" x2="-0.8" y2="-1" width="0.2032" layer="21" curve="90"/>
+<wire x1="0.8" y1="-1" x2="1" y2="-0.7" width="0.2032" layer="21" curve="90"/>
+<wire x1="-0.8" y1="1" x2="0.8" y2="1" width="0.2032" layer="21"/>
+<smd name="1" x="-0.45" y="0" dx="0.635" dy="1.27" layer="1" cream="no"/>
+<smd name="2" x="0.45" y="0" dx="0.635" dy="1.27" layer="1" cream="no"/>
+<text x="-0.908" y="1.27" size="0.4064" layer="25">&gt;NAME</text>
+<text x="-0.908" y="-1.651" size="0.4064" layer="27">&gt;VALUE</text>
+</package>
+<package name="SJ_2S-NO-NS" urn="urn:adsk.eagle:footprint:41385673/1" library_version="2">
+<smd name="1" x="-0.45" y="0" dx="0.635" dy="1.27" layer="1" cream="no"/>
+<smd name="2" x="0.45" y="0" dx="0.635" dy="1.27" layer="1" cream="no"/>
+<text x="-0.908" y="1.27" size="0.4064" layer="25">&gt;NAME</text>
+<text x="-0.908" y="-1.651" size="0.4064" layer="27">&gt;VALUE</text>
+</package>
+</packages>
+<packages3d>
+<package3d name="1X02" urn="urn:adsk.eagle:package:41385954/1" type="box" library_version="2">
+<description>&lt;h3&gt;Plated Through Hole&lt;/h3&gt;
+&lt;p&gt;Specifications:
+&lt;ul&gt;&lt;li&gt;Pin count:2&lt;/li&gt;
+&lt;li&gt;Pin pitch:0.1"&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;
+&lt;p&gt;Example device(s):
+&lt;ul&gt;&lt;li&gt;CONN_02&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;</description>
+<packageinstances>
+<packageinstance name="1X02"/>
+</packageinstances>
+</package3d>
+<package3d name="SJ_2S" urn="urn:adsk.eagle:package:41385953/1" type="box" library_version="2">
+<description>Small solder jumper with big paste layer so it will short during reflow.</description>
+<packageinstances>
+<packageinstance name="SJ_2S"/>
+</packageinstances>
+</package3d>
+<package3d name="1X02_LOCK" urn="urn:adsk.eagle:package:41385952/1" type="box" library_version="2">
+<description>&lt;h3&gt;Plated Through Hole - Locking Footprint&lt;/h3&gt;
+Holes are staggered by 0.005" from center to hold pins while soldering. 
+&lt;p&gt;Specifications:
+&lt;ul&gt;&lt;li&gt;Pin count:2&lt;/li&gt;
+&lt;li&gt;Pin pitch:0.1"&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;
+&lt;p&gt;Example device(s):
+&lt;ul&gt;&lt;li&gt;CONN_02&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;</description>
+<packageinstances>
+<packageinstance name="1X02_LOCK"/>
+</packageinstances>
+</package3d>
+<package3d name="SJ_2S-NO" urn="urn:adsk.eagle:package:41385951/1" type="box" library_version="2">
+<description>Small solder jumper with no paste layer so it will open after reflow.</description>
+<packageinstances>
+<packageinstance name="SJ_2S-NO"/>
+</packageinstances>
+</package3d>
+<package3d name="SJ_2S-NO-NS" urn="urn:adsk.eagle:package:41385950/1" type="box" library_version="2">
+<packageinstances>
+<packageinstance name="SJ_2S-NO-NS"/>
+</packageinstances>
+</package3d>
+</packages3d>
+<symbols>
+<symbol name="JUMPER-2" urn="urn:adsk.eagle:symbol:41385439/1" library_version="2">
+<wire x1="0" y1="0" x2="0" y2="1.27" width="0.1524" layer="94"/>
+<wire x1="0" y1="2.54" x2="0" y2="1.27" width="0.4064" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="1.27" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="2.54" x2="2.54" y2="1.27" width="0.4064" layer="94"/>
+<wire x1="-0.635" y1="0" x2="3.175" y2="0" width="0.4064" layer="94"/>
+<wire x1="3.175" y1="0" x2="3.175" y2="0.635" width="0.4064" layer="94"/>
+<wire x1="3.175" y1="0.635" x2="-0.635" y2="0.635" width="0.4064" layer="94"/>
+<wire x1="-0.635" y1="0.635" x2="-0.635" y2="0" width="0.4064" layer="94"/>
+<text x="-1.27" y="0" size="1.778" layer="95" rot="R90">&gt;NAME</text>
+<text x="5.715" y="0" size="1.778" layer="96" rot="R90">&gt;VALUE</text>
+<pin name="1" x="0" y="-2.54" visible="pad" length="short" direction="pas" rot="R90"/>
+<pin name="2" x="2.54" y="-2.54" visible="pad" length="short" direction="pas" rot="R90"/>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="JUMPER-2" urn="urn:adsk.eagle:component:41386290/1" prefix="JP" uservalue="yes" library_version="2">
+<description>&lt;b&gt;Jumper&lt;/b&gt;
+Basic 0.1" spaced jumper. Use with breakaway headers.</description>
+<gates>
+<gate name="A" symbol="JUMPER-2" x="2.54" y="0"/>
+</gates>
+<devices>
+<device name="PTH" package="1X02">
+<connects>
+<connect gate="A" pin="1" pad="1"/>
+<connect gate="A" pin="2" pad="2"/>
+</connects>
+<package3dinstances>
+<package3dinstance package3d_urn="urn:adsk.eagle:package:41385954/1"/>
+</package3dinstances>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="SMD-NC" package="SJ_2S">
+<connects>
+<connect gate="A" pin="1" pad="1"/>
+<connect gate="A" pin="2" pad="2"/>
+</connects>
+<package3dinstances>
+<package3dinstance package3d_urn="urn:adsk.eagle:package:41385953/1"/>
+</package3dinstances>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="PTH_LOCK" package="1X02_LOCK">
+<connects>
+<connect gate="A" pin="1" pad="1"/>
+<connect gate="A" pin="2" pad="2"/>
+</connects>
+<package3dinstances>
+<package3dinstance package3d_urn="urn:adsk.eagle:package:41385952/1"/>
+</package3dinstances>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="SMD-NO" package="SJ_2S-NO">
+<connects>
+<connect gate="A" pin="1" pad="1"/>
+<connect gate="A" pin="2" pad="2"/>
+</connects>
+<package3dinstances>
+<package3dinstance package3d_urn="urn:adsk.eagle:package:41385951/1"/>
+</package3dinstances>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="SMD-NO-NS" package="SJ_2S-NO-NS">
+<connects>
+<connect gate="A" pin="1" pad="1"/>
+<connect gate="A" pin="2" pad="2"/>
+</connects>
+<package3dinstances>
+<package3dinstance package3d_urn="urn:adsk.eagle:package:41385950/1"/>
+</package3dinstances>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
 </libraries>
 <attributes>
 </attributes>
@@ -12160,7 +12406,7 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <part name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="100nF"/>
 <part name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="1uF"/>
 <part name="PWR" library="led" library_urn="urn:adsk.eagle:library:259" deviceset="LED" device="SML0805" package3d_urn="urn:adsk.eagle:package:15830/1" value="LED"/>
-<part name="R1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="10k"/>
+<part name="R1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="2K2"/>
 <part name="DEBUG" library="microbuilder" deviceset="HEADER-1X6" device="ROUND" value="JTAG"/>
 <part name="J2" library="SamacSys_Parts" deviceset="MSD-11-A" device=""/>
 <part name="RN1" library="CAY16-103J4LF" deviceset="CAY16-103J4LF" device="" value="CAY16-472J4LF"/>
@@ -12199,6 +12445,9 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <part name="LED7" library="Blinkenlights" deviceset="COM-14608" device=""/>
 <part name="LED8" library="Blinkenlights" deviceset="COM-14608" device=""/>
 <part name="LED9" library="Blinkenlights" deviceset="COM-14608" device=""/>
+<part name="JP1" library="SparkFun-Retired" library_urn="urn:adsk.eagle:library:533" deviceset="JUMPER-2" device="PTH" package3d_urn="urn:adsk.eagle:package:41385954/1"/>
+<part name="JP2" library="SparkFun-Retired" library_urn="urn:adsk.eagle:library:533" deviceset="JUMPER-2" device="PTH" package3d_urn="urn:adsk.eagle:package:41385954/1"/>
+<part name="R7" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="2K2"/>
 </parts>
 <sheets>
 <sheet>
@@ -12400,6 +12649,18 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <attribute name="NAME" x="273.05" y="180.34" size="1.778" layer="95" align="center-left"/>
 <attribute name="VALUE" x="273.05" y="177.8" size="1.778" layer="96" align="center-left"/>
 </instance>
+<instance part="JP1" gate="A" x="223.52" y="73.66" smashed="yes" rot="R270">
+<attribute name="NAME" x="223.52" y="74.93" size="1.778" layer="95"/>
+<attribute name="VALUE" x="223.52" y="67.945" size="1.778" layer="96"/>
+</instance>
+<instance part="JP2" gate="A" x="83.82" y="116.84" smashed="yes" rot="R180">
+<attribute name="NAME" x="85.09" y="116.84" size="1.778" layer="95" rot="R270"/>
+<attribute name="VALUE" x="78.105" y="116.84" size="1.778" layer="96" rot="R270"/>
+</instance>
+<instance part="R7" gate="G$1" x="91.44" y="132.08" smashed="yes" rot="R270">
+<attribute name="NAME" x="92.9386" y="135.89" size="1.778" layer="95" rot="R270"/>
+<attribute name="VALUE" x="88.138" y="135.89" size="1.778" layer="96" rot="R270"/>
+</instance>
 </instances>
 <busses>
 <bus name="A[0..31],BVD[1..2],CD[1..2],CE[1..2],D[0..15],GND,IORD,IOWR,LED[1..3],LED_CLK,LED_DO,NRST,OE,RAM_CLK,RAM_MISO,RAM_MOSI,RAM_SNSS,READY,!REG,RESET,SD_CD,SD_CLK,SD_MISO,SD_MOSI,SD_SNSS,SWCLK,SWDIO,USART_RX,USART_TX,VCC,VCC33,!VS[1..2],!WAIT,!WE,WP/!IOCS16">
@@ -12416,7 +12677,7 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <wire x1="429.26" y1="-5.08" x2="332.74" y2="-5.08" width="0.762" layer="92"/>
 </segment>
 </bus>
-<bus name="A[0..31],AUD_MIXED,AUD_O,BVD[1..2],CD[1..2],CE[1..2],D[0..15],GND,IORD,IOWR,LED[1..3],LED_CLK,LED_DO,NRST,OE,RAM_CLK,RAM_MISO,RAM_MOSI,RAM_SNSS,READY,!REG,RESET,SD_CD,SD_CLK,SD_MISO,SD_MOSI,SD_SNSS,SWCLK,SWDIO,USART_RX,USART_TX,VCC,VCC33,!VS[1..2],!WAIT,!WE,WP/!IOCS16">
+<bus name="A[0..31],AUD_MIXED,AUD_O,BOOT0,BVD[1..2],CD[1..2],CE[1..2],D[0..15],GND,IORD,IOWR,LED[1..3],LED_CLK,LED_DO,NRST,OE,RAM_CLK,RAM_MISO,RAM_MOSI,RAM_SNSS,READY,!REG,RESET,SD_CD,SD_CLK,SD_MISO,SD_MOSI,SD_SNSS,SWCLK,SWDIO,USART_RX,USART_TX,USB1_DM,USB1_DP,VCC,VCC33,!VS[1..2],!WAIT,!WE,WP/!IOCS16">
 <segment>
 <wire x1="63.5" y1="142.24" x2="63.5" y2="-2.54" width="0.762" layer="92"/>
 <wire x1="63.5" y1="142.24" x2="205.74" y2="142.24" width="0.762" layer="92"/>
@@ -12602,11 +12863,6 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <label x="383.54" y="-2.54" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="IC1" gate="G$1" pin="BOOT0"/>
-<wire x1="119.38" y1="119.38" x2="119.38" y2="142.24" width="0.1524" layer="91"/>
-<label x="119.38" y="124.46" size="1.778" layer="95" rot="R90"/>
-</segment>
-<segment>
 <pinref part="LED3" gate="G$1" pin="GND"/>
 <wire x1="17.78" y1="167.64" x2="10.16" y2="167.64" width="0.1524" layer="91"/>
 <wire x1="10.16" y1="167.64" x2="10.16" y2="142.24" width="0.1524" layer="91"/>
@@ -12643,6 +12899,10 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <pinref part="LED9" gate="G$1" pin="GND"/>
 <wire x1="248.92" y1="167.64" x2="246.38" y2="167.64" width="0.1524" layer="91"/>
 <wire x1="246.38" y1="167.64" x2="246.38" y2="157.48" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="R7" gate="G$1" pin="1"/>
+<wire x1="91.44" y1="137.16" x2="91.44" y2="142.24" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="D3" class="0">
@@ -13474,6 +13734,11 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <wire x1="345.44" y1="139.7" x2="345.44" y2="132.08" width="0.1524" layer="91"/>
 <label x="340.36" y="142.24" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="JP2" gate="A" pin="2"/>
+<wire x1="81.28" y1="119.38" x2="81.28" y2="142.24" width="0.1524" layer="91"/>
+<label x="81.28" y="129.54" size="1.778" layer="95" rot="R90"/>
+</segment>
 </net>
 <net name="USART_RX" class="0">
 <segment>
@@ -13665,26 +13930,26 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 </net>
 <net name="RAM_MOSI" class="0">
 <segment>
-<pinref part="IC1" gate="G$1" pin="PA6"/>
-<wire x1="116.84" y1="22.86" x2="116.84" y2="-2.54" width="0.1524" layer="91"/>
-<label x="116.84" y="2.54" size="1.778" layer="95" rot="R90"/>
-</segment>
-<segment>
 <pinref part="IC3" gate="G$1" pin="MOSI"/>
 <wire x1="294.64" y1="33.02" x2="297.18" y2="33.02" width="0.1524" layer="91"/>
 <label x="297.18" y="33.02" size="1.27" layer="95" xref="yes"/>
 </segment>
-</net>
-<net name="RAM_MISO" class="0">
 <segment>
-<pinref part="IC1" gate="G$1" pin="PA7"/>
 <wire x1="119.38" y1="22.86" x2="119.38" y2="-2.54" width="0.1524" layer="91"/>
+<pinref part="IC1" gate="G$1" pin="PA7"/>
 <label x="119.38" y="2.54" size="1.778" layer="95" rot="R90"/>
 </segment>
+</net>
+<net name="RAM_MISO" class="0">
 <segment>
 <pinref part="IC3" gate="G$1" pin="MISO"/>
 <wire x1="264.16" y1="38.1" x2="261.62" y2="38.1" width="0.1524" layer="91"/>
 <label x="261.62" y="38.1" size="1.27" layer="95" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<wire x1="116.84" y1="22.86" x2="116.84" y2="-2.54" width="0.1524" layer="91"/>
+<pinref part="IC1" gate="G$1" pin="PA6"/>
+<label x="116.84" y="2.54" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="N$3" class="0">
@@ -13929,6 +14194,47 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/COM-14608.pdf
 <pinref part="IC1" gate="G$1" pin="PC1"/>
 <wire x1="96.52" y1="63.5" x2="63.5" y2="63.5" width="0.1524" layer="91"/>
 <label x="76.2" y="63.5" size="1.778" layer="95"/>
+</segment>
+</net>
+<net name="USB1_DP" class="0">
+<segment>
+<pinref part="IC1" gate="G$1" pin="PA12"/>
+<wire x1="172.72" y1="91.44" x2="205.74" y2="91.44" width="0.1524" layer="91"/>
+<label x="187.96" y="91.44" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="JP1" gate="A" pin="1"/>
+<wire x1="220.98" y1="73.66" x2="205.74" y2="73.66" width="0.1524" layer="91"/>
+<label x="208.28" y="73.66" size="1.778" layer="95"/>
+</segment>
+</net>
+<net name="USB1_DM" class="0">
+<segment>
+<pinref part="IC1" gate="G$1" pin="PA11"/>
+<wire x1="172.72" y1="88.9" x2="205.74" y2="88.9" width="0.1524" layer="91"/>
+<label x="187.96" y="88.9" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="JP1" gate="A" pin="2"/>
+<wire x1="220.98" y1="71.12" x2="205.74" y2="71.12" width="0.1524" layer="91"/>
+<label x="208.28" y="71.12" size="1.778" layer="95"/>
+</segment>
+</net>
+<net name="BOOT0" class="0">
+<segment>
+<pinref part="IC1" gate="G$1" pin="BOOT0"/>
+<wire x1="119.38" y1="119.38" x2="119.38" y2="142.24" width="0.1524" layer="91"/>
+<label x="119.38" y="124.46" size="1.778" layer="95" rot="R90"/>
+</segment>
+<segment>
+<pinref part="JP2" gate="A" pin="1"/>
+<label x="83.82" y="129.54" size="1.778" layer="95" rot="R90"/>
+<wire x1="83.82" y1="119.38" x2="83.82" y2="121.92" width="0.1524" layer="91"/>
+<pinref part="R7" gate="G$1" pin="2"/>
+<wire x1="83.82" y1="121.92" x2="83.82" y2="142.24" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="127" x2="91.44" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="121.92" x2="83.82" y2="121.92" width="0.1524" layer="91"/>
+<junction x="83.82" y="121.92"/>
 </segment>
 </net>
 </nets>
