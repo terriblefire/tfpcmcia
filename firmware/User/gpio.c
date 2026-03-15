@@ -1,5 +1,35 @@
 #include "gpio.h"
 
+
+static void GPIO_Spi_Init(SPI_TypeDef *spi, GPIO_TypeDef *gpio, uint16_t pins) {
+
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    SPI_InitTypeDef SPI_InitStructure = {0};
+
+    // SCK, MISO, MOSI pin configuration
+    GPIO_InitStructure.GPIO_Pin = pins;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_Init (gpio, &GPIO_InitStructure);
+
+    // SPI configuration
+    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+    SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_8;
+    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+    SPI_InitStructure.SPI_CRCPolynomial = 7;
+    SPI_Init(spi, &SPI_InitStructure);
+
+    /* SSI=1: master sees NSS high (software NSS), prevents MODF fault */
+    SPI_NSSInternalSoftwareConfig(spi, SPI_NSSInternalSoft_Set);
+
+    SPI_Cmd(spi, ENABLE);
+}
+
 void GPIO_Config(void) {
     GPIO_InitTypeDef GPIO_InitStructure = {0};
     EXTI_InitTypeDef EXTI_InitStructure = {0};
@@ -49,9 +79,17 @@ void GPIO_Config(void) {
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-    GPIOA->BSHR = GPIO_Pin_2;    /* READY = HIGH */
+    GPIO_Init(GPIOA, &GPIO_InitStructure);   /* READY = HIGH */
 
+    /* PA1 (SPIRAM CS): output push-pull, drive HIGH (deasserted) */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    GPIO_WriteBit(GPIOA, GPIO_Pin_1, Bit_SET);
+    RCC_APB2PeriphClockCmd (RCC_APB2Periph_SPI1, ENABLE);
+    GPIO_Spi_Init(SPI1, GPIOA, GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);  /* SCK, MISO, MOSI */
+
+   
     /* PA9 (USART1_TX): alternate function push-pull */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
@@ -63,8 +101,8 @@ void GPIO_Config(void) {
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-    /* PC8 (LED1): output push-pull */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+    /* LEDx: output push-pull */
+    GPIO_InitStructure.GPIO_Pin = LED1_Pin | LED2_Pin;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
@@ -84,4 +122,21 @@ void GPIO_Config(void) {
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
+
+    /* PA15 (SD CD): input pull-up (LOW = card inserted) */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+     /* PC9 (SD CS): output push-pull, drive HIGH (deasserted) */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    GPIO_WriteBit(GPIOC, GPIO_Pin_9, Bit_SET);
+
+    /* SPI3 remap: PC10=SCK, PC11=MISO, PC12=MOSI */
+    GPIO_PinRemapConfig(GPIO_Remap_SPI3, ENABLE); 
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
+    GPIO_Spi_Init(SPI3, GPIOC, GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12);  /* SCK, MISO, MOSI */
 }

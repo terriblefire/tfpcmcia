@@ -4,6 +4,8 @@ DOCKER = PATH="/Applications/Docker.app/Contents/Resources/bin:$$PATH" docker
 .PHONY: all clean flash docker-image
 
 all: docker-image
+	@test -f driver/tfpcmcia.rom || \
+	  (echo "ERROR: driver/tfpcmcia.rom not found — build the driver first" && exit 1)
 	$(DOCKER) run --rm -v $(PWD):/host $(IMAGE) make -j -C /host/firmware
 
 clean:

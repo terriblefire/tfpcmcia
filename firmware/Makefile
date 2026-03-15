@@ -36,9 +36,11 @@ SRCS  = User/main.c \
         Peripheral/src/ch32v30x_exti.c \
         Peripheral/src/ch32v30x_usart.c \
         Peripheral/src/ch32v30x_misc.c \
-        Peripheral/src/ch32v30x_dbgmcu.c
+        Peripheral/src/ch32v30x_dbgmcu.c \
+        Peripheral/src/ch32v30x_spi.c
 
-ASRCS = Startup/startup_ch32v30x_D8C.S
+ASRCS = Startup/startup_ch32v30x_D8C.S \
+        User/boot_rom.S
 
 OBJS  = $(SRCS:.c=.o) $(ASRCS:.S=.o)
 
