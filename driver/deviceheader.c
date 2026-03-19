@@ -93,6 +93,7 @@ static struct DevBase* Init(
     db->db_SegList = segList;
 
     // Init SD card
+    SdSetSysBase(SysBase);
     UBYTE cardType = SdInit();
     db->db_CardType = cardType;
     if (cardType == SD_TYPE_NONE)
