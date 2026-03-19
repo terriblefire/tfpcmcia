@@ -9,7 +9,7 @@
 #define SD_CS_LOW()  {GPIO_SafeResetBits(SD_SNSS_GPIO_Port, SD_SNSS_Pin); GPIO_SafeResetBits(LED2_GPIO_Port, LED2_Pin);}
 
 #define DELAY_100NS() do { \
-    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop"); \
+    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
 /* ---- Dispatch functions -------------------------------------------------
@@ -41,7 +41,7 @@ static __attribute__((always_inline)) FlagStatus MYSPI_I2S_GetFlagStatus(SPI_Typ
 static uint8_t sd_rx_byte = 0xFF;
 
 static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
-    
+
     while (SPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_TXE) == RESET) {};
     SPI3->DATAR = data;
     while (SPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_RXNE) == RESET) {};
