@@ -15,6 +15,9 @@
 
 /* Both strobes: wait until both go HIGH before floating data bus */
 #define STROBE_MASK (UDS_MASK | LDS_MASK)
+#define MEM_MASK (OE_MASK | WE_MASK)
+#define IO_MASK (IOR_MASK | IOW_MASK)
+#define ACCESS_MASK (MEM_MASK | IO_MASK)
 
 /* Gayle swaps PCMCIA D0-D7 <-> D8-D15 relative to the 68000 bus.
  * Apply to every 16-bit value written to GPIOD->OUTDR. */

@@ -136,7 +136,12 @@ void GPIO_Config(void) {
     GPIO_WriteBit(GPIOC, GPIO_Pin_9, Bit_SET);
 
     /* SPI3 remap: PC10=SCK, PC11=MISO, PC12=MOSI */
-    GPIO_PinRemapConfig(GPIO_Remap_SPI3, ENABLE); 
+    GPIO_PinRemapConfig(GPIO_Remap_SPI3, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
-    GPIO_Spi_Init(SPI3, GPIOC, GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12);  /* SCK, MISO, MOSI */
+    GPIO_Spi_Init(SPI3, GPIOC, GPIO_Pin_10 | GPIO_Pin_12);  /* SCK, MOSI as AF_PP */
+    /* MISO as input pull-up — holds MISO high when SD card releases the bus */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
 }

@@ -68,6 +68,7 @@ UBYTE SdInit(void)
     {
         kprintf("SdInit: CMD0 fail %lx\n", (ULONG)r1);
         SPI_CS = 0xFF;
+        SpiByte(0xFF);
         return SD_TYPE_NONE;
     }
 
@@ -97,6 +98,7 @@ UBYTE SdInit(void)
                 SpiByte(0xFF);
 
                 SPI_CS = 0xFF;
+                SpiByte(0xFF);
 
                 if (ocr0 & 0x40)
                 {
@@ -113,6 +115,7 @@ UBYTE SdInit(void)
 
         kprintf("SdInit: ACMD41 timeout\n");
         SPI_CS = 0xFF;
+        SpiByte(0xFF);
         return SD_TYPE_NONE;
     }
 
@@ -125,12 +128,14 @@ UBYTE SdInit(void)
         if (r1 == 0x00)
         {
             SPI_CS = 0xFF;
+            SpiByte(0xFF);
             return SD_TYPE_V1;
         }
     }
 
     kprintf("SdInit: SDv1 ACMD41 timeout\n");
     SPI_CS = 0xFF;
+    SpiByte(0xFF);
     return SD_TYPE_NONE;
 }
 
@@ -139,7 +144,7 @@ UBYTE SdInit(void)
 LONG SdReadSector(ULONG lba, UBYTE* buffer)
 {
     // For MAME emulated SD_TYPE_V2: byte address
-    ULONG addr = lba << 9;
+    ULONG addr = lba;
 
     SPI_CS = 0x00;
 
@@ -148,6 +153,7 @@ LONG SdReadSector(ULONG lba, UBYTE* buffer)
     {
         kprintf("SdRead: CMD17 fail %lx lba %ld\n", (ULONG)r1, lba);
         SPI_CS = 0xFF;
+        SpiByte(0xFF);
         return -1;
     }
 
@@ -161,11 +167,13 @@ LONG SdReadSector(ULONG lba, UBYTE* buffer)
         {
             kprintf("SdRead: bad token %lx\n", (ULONG)tok);
             SPI_CS = 0xFF;
+            SpiByte(0xFF);
             return -1;
         }
     }
     kprintf("SdRead: token timeout\n");
     SPI_CS = 0xFF;
+    SpiByte(0xFF);
     return -1;
 
 gotToken:
@@ -178,13 +186,14 @@ gotToken:
     SpiByte(0xFF);
 
     SPI_CS = 0xFF;
+    SpiByte(0xFF);
     return 0;
 }
 
 // Write a single 512-byte sector
 LONG SdWriteSector(ULONG lba, const UBYTE* buffer)
 {
-    ULONG addr = lba << 9;
+    ULONG addr = lba;
 
     SPI_CS = 0x00;
 
@@ -193,6 +202,7 @@ LONG SdWriteSector(ULONG lba, const UBYTE* buffer)
     {
         kprintf("SdWrite: CMD24 fail %lx lba %ld\n", (ULONG)r1, lba);
         SPI_CS = 0xFF;
+        SpiByte(0xFF);
         return -1;
     }
 
@@ -214,6 +224,7 @@ LONG SdWriteSector(ULONG lba, const UBYTE* buffer)
     {
         kprintf("SdWrite: bad response %lx\n", (ULONG)response);
         SPI_CS = 0xFF;
+        SpiByte(0xFF);
         return -1;
     }
 
@@ -225,5 +236,6 @@ LONG SdWriteSector(ULONG lba, const UBYTE* buffer)
     }
 
     SPI_CS = 0xFF;
+    SpiByte(0xFF);
     return 0;
 }
