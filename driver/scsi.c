@@ -145,7 +145,7 @@ static BYTE ScsiRead10(struct SCSICmd* scsi, struct DevBase* db)
 
     for (UWORD i = 0; i < count; i++)
     {
-        if (SdReadSector(lba + i, data) != 0)
+        if (SdReadSector(db->db_CardType, lba + i, data) != 0)
         {
             kprintf("SCSI READ(10) error LBA %ld\n", lba + i);
             scsi->scsi_Status = SCSI_STATUS_CHECK_CONDITION;
@@ -173,7 +173,7 @@ static BYTE ScsiWrite10(struct SCSICmd* scsi, struct DevBase* db)
 
     for (UWORD i = 0; i < count; i++)
     {
-        if (SdWriteSector(lba + i, (const UBYTE*)data) != 0)
+        if (SdWriteSector(db->db_CardType, lba + i, (const UBYTE*)data) != 0)
         {
             kprintf("SCSI WRITE(10) error LBA %ld\n", lba + i);
             scsi->scsi_Status = SCSI_STATUS_CHECK_CONDITION;
@@ -200,7 +200,7 @@ static BYTE ScsiRead6(struct SCSICmd* scsi, struct DevBase* db)
 
     for (UWORD i = 0; i < count; i++)
     {
-        if (SdReadSector(lba + i, data) != 0)
+        if (SdReadSector(db->db_CardType, lba + i, data) != 0)
         {
             scsi->scsi_Status = SCSI_STATUS_CHECK_CONDITION;
             SetSense(scsi, SENSE_MEDIUM_ERROR, 0x11, 0x00);
@@ -226,7 +226,7 @@ static BYTE ScsiWrite6(struct SCSICmd* scsi, struct DevBase* db)
 
     for (UWORD i = 0; i < count; i++)
     {
-        if (SdWriteSector(lba + i, (const UBYTE*)data) != 0)
+        if (SdWriteSector(db->db_CardType, lba + i, (const UBYTE*)data) != 0)
         {
             scsi->scsi_Status = SCSI_STATUS_CHECK_CONDITION;
             SetSense(scsi, SENSE_MEDIUM_ERROR, 0x03, 0x00);

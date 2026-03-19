@@ -21,5 +21,5 @@
 UBYTE SpiByte(UBYTE data);
 UBYTE SpiCmd(UBYTE cmd, ULONG arg);
 UBYTE SdInit(void);
-LONG SdReadSector(ULONG lba, UBYTE* buffer);
-LONG SdWriteSector(ULONG lba, const UBYTE* buffer);
+LONG SdReadSector(UBYTE cardType, ULONG lba, UBYTE* buffer);
+LONG SdWriteSector(UBYTE cardType, ULONG lba, const UBYTE* buffer);

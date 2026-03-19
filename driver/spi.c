@@ -2,6 +2,7 @@
 #include "device.h"
 #include "debug.h"
 
+
 // Transfer one byte over SPI
 UBYTE SpiByte(UBYTE data)
 {
@@ -141,10 +142,9 @@ UBYTE SdInit(void)
 
 // Read a single 512-byte sector
 // lba is sector number; for non-SDHC cards this becomes byte address
-LONG SdReadSector(ULONG lba, UBYTE* buffer)
+LONG SdReadSector(UBYTE cardType, ULONG lba, UBYTE* buffer)
 {
-    // For MAME emulated SD_TYPE_V2: byte address
-    ULONG addr = lba;
+    ULONG addr = (cardType == SD_TYPE_SDHC) ? lba : lba << 9;
 
     SPI_CS = 0x00;
 
@@ -191,9 +191,9 @@ gotToken:
 }
 
 // Write a single 512-byte sector
-LONG SdWriteSector(ULONG lba, const UBYTE* buffer)
+LONG SdWriteSector(UBYTE cardType, ULONG lba, const UBYTE* buffer)
 {
-    ULONG addr = lba;
+    ULONG addr = (cardType == SD_TYPE_SDHC) ? lba : lba << 9;
 
     SPI_CS = 0x00;
 

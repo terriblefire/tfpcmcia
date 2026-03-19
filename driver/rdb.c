@@ -17,7 +17,7 @@
 // Read a sector and optionally verify RDB block type + checksum
 static ULONG GetBlock(ULONG lba, ULONG type, UBYTE* buffer, struct DevBase* db)
 {
-    if (SdReadSector(lba, buffer) != 0)
+    if (SdReadSector(db->db_CardType, lba, buffer) != 0)
     {
         kprintf("GetBlock: read error LBA %ld\n", lba);
         return 0;

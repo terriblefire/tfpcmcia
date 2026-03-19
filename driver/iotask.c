@@ -117,9 +117,9 @@ static void ReadWrite(struct IOStdReq* ior, struct DevBase* db)
     {
         LONG err;
         if (isWrite)
-            err = SdWriteSector(lba + i, buffer);
+            err = SdWriteSector(db->db_CardType, lba + i, buffer);
         else
-            err = SdReadSector(lba + i, buffer);
+            err = SdReadSector(db->db_CardType, lba + i, buffer);
 
         if (err)
         {
