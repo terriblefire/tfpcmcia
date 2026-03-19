@@ -5,8 +5,8 @@
 #define GPIO_SafeResetBits(GPIOx, GPIO_Pin) ((GPIOx)->BCR = (GPIO_Pin))
 #define GPIO_SafeGetBits(GPIOx, GPIO_Pin) ((GPIOx)->INDR & (GPIO_Pin))
 
-#define SD_CS_HIGH() {GPIO_SafeSetBits (SD_SNSS_GPIO_Port, SD_SNSS_Pin);} 
-#define SD_CS_LOW() {GPIO_SafeResetBits (SD_SNSS_GPIO_Port, SD_SNSS_Pin);}
+#define SD_CS_HIGH() {GPIO_SafeSetBits(SD_SNSS_GPIO_Port, SD_SNSS_Pin); GPIO_SafeSetBits(LED2_GPIO_Port, LED2_Pin);}
+#define SD_CS_LOW()  {GPIO_SafeResetBits(SD_SNSS_GPIO_Port, SD_SNSS_Pin); GPIO_SafeResetBits(LED2_GPIO_Port, LED2_Pin);}
 
 #define DELAY_100NS() do { \
     __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop"); \
