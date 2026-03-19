@@ -85,8 +85,11 @@ UBYTE SdInit(void)
     {
         // SDv2 card — ACMD41 with HCS
         kprintf("SdInit: SDv2\n");
-        for (UWORD i = 0; i < 1000; i++)
+        for (ULONG i = 0; i < 100000; i++)
         {
+            SPI_CS = 0xFF;
+            SpiByte(0xFF);
+            SPI_CS = 0x00;
             SpiCmd(CMD55, 0);
             r1 = SpiCmd(ACMD41, 0x40000000);
             if (r1 == 0x00)
@@ -124,6 +127,9 @@ UBYTE SdInit(void)
     kprintf("SdInit: SDv1\n");
     for (UWORD i = 0; i < 1000; i++)
     {
+        SPI_CS = 0xFF;
+        SpiByte(0xFF);
+        SPI_CS = 0x00;
         SpiCmd(CMD55, 0);
         r1 = SpiCmd(ACMD41, 0);
         if (r1 == 0x00)
