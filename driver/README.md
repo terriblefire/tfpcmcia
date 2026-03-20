@@ -7,28 +7,28 @@ Amiga device driver and boot ROM for the TerribleFire PCMCIA board — a custom 
 The board plugs into the A1200's PCMCIA slot and provides:
 
 - **4MB SPIRAM** mapped into the PCMCIA common memory space ($600000–$9FFFFF), usable as fast RAM
-- **SPI SD card interface** exposed through attribute memory registers
-- **64KB boot ROM** that loads and initializes the device driver at cold boot, then switches to SPIRAM mode
+- **SPI SD card interface** exposed through I/O space registers
+- **128KB boot ROM** that loads and initializes the device driver at cold boot, then switches to SPIRAM mode
 
-The CH32V307 MCU on the board handles SPI bus arbitration and SD card communication. The Amiga CPU communicates with it through memory-mapped registers in the PCMCIA attribute memory space.
+The CH32V307 MCU on the board handles SPI bus arbitration and SD card communication. The Amiga CPU communicates with it through memory-mapped registers in the PCMCIA I/O space.
 
 ## Memory Map
 
 ### Common Memory ($600000–$9FFFFF)
 
-At power-on, the first 64KB ($600000–$60FFFF) contains the boot ROM. After the driver initializes, `BOARD_CTRL` bit 0 switches this region to SPIRAM, giving the full 4MB to the system.
+At power-on, the first 128KB ($600000–$61FFFF) contains the boot ROM. After the driver initializes, `BOARD_CTRL` bit 0 switches this region to SPIRAM, giving the full 4MB to the system.
 
-### Attribute Memory Registers ($A00000+)
+### I/O Space Registers ($A20000+)
 
 All registers are at even byte addresses (68000 bus convention):
 
 | Address    | Name         | R/W | Description |
 |------------|--------------|-----|-------------|
-| `$A00200`  | `SPI_DATA`   | R/W | SPI data register — write a byte to clock it out, read to get the byte clocked in |
-| `$A00202`  | `SPI_CS`     | W   | SPI chip select — `$00` = assert (active), `$FF` = deassert |
-| `$A00204`  | `SPI_STATUS` | R   | Status register — bit 0: SD card detect (1 = card present) |
-| `$A00206`  | `BOARD_CTRL` | W   | Board control — bit 0: SPIRAM mode (1 = SPIRAM, 0 = boot ROM) |
-| `$A00208`  | `BOARD_ID`   | R   | Board identification — reads `$01` |
+| `$A20200`  | `SPI_DATA`   | R/W | SPI data register — write a byte to clock it out, read to get the byte clocked in |
+| `$A20202`  | `SPI_CS`     | W   | SPI chip select — `$00` = assert (active), `$FF` = deassert |
+| `$A20204`  | `SPI_STATUS` | R   | Status register — bit 0: SD card detect (1 = card present) |
+| `$A20206`  | `BOARD_CTRL` | W   | Board control — bit 0: SPIRAM mode (1 = SPIRAM, 0 = boot ROM) |
+| `$A20208`  | `BOARD_ID`   | R   | Board identification — reads `$01` |
 
 ## Boot Sequence
 

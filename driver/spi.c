@@ -163,6 +163,7 @@ UBYTE SdInit(void)
         return SD_TYPE_NONE;
     }
 
+    kprintf("SdInit: card detected - try init\n");
     for (UBYTE attempt = 0; attempt < 3; attempt++) {
         kprintf("SdInit: attempt %ld\n", (ULONG)attempt);
         UBYTE type = SdTryInit();
