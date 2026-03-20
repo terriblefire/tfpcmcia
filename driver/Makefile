@@ -1,5 +1,5 @@
 CC = /opt/amiga/bin/m68k-amigaos-gcc
-AS = /opt/vbcc/bin/vasmm68k_mot
+AS = /opt/amiga/bin/vasmm68k_mot
 
 CFLAGS = -Os -m68000 -Wall -Werror -fomit-frame-pointer -mregparm=4 \
          -fno-builtin -noixemul
@@ -13,7 +13,7 @@ all: tfpcmcia.device tfpcmcia.rom
 tfpcmcia.device: $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) -lgcc
 
-tfpcmcia.rom: tfpcmcia_rom.s tfpcmcia.device
+tfpcmcia.rom: tfpcmcia_rom.s tfpcmcia.device std_lz4.bin
 	$(AS) $(VASFLAGS) -o $@ $<
 
 %.o: %.c

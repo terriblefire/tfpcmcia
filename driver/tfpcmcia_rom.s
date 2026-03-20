@@ -91,11 +91,13 @@ Init:
 	move.l	a6,a5			; a5 = ExecBase (preserve across calls)
 
 	; set serial baud rate
-	move.w	#SERPER_19200,SERPER
+	move.w	#SERPER_9600,SERPER
 
 	; print "TF\n"
 	lea	str_tf(pc),a0
 	bsr	ser_puts
+
+	bsr SimonTopDog
 
 	;-------------------------------------------------------------------
 	; Load embedded tfpcmcia.device from ROM into Amiga RAM
@@ -390,7 +392,7 @@ read_long:
 ;---------------------------------------------------------------------------
 ; Strings
 ;---------------------------------------------------------------------------
-str_tf:		dc.b	"TF",$0A,0
+str_tf:		dc.b	"TF TopDOG!",$0A,0
 str_badhunk:	dc.b	"bad hunk",$0A,0
 str_nort:	dc.b	"no RT",$0A,0
 str_nomem:	dc.b	"no mem",$0A,0
@@ -431,8 +433,10 @@ ser_puts:
 DeviceBinary:
 	incbin	"tfpcmcia.device"
 DeviceBinaryEnd:
+SimonTopDog:
+	incbin	"std_lz4.bin"
 
 EndSkip:
 
-; pad to 64KB
-	dcb.b	$10000-(EndSkip-RomTag),$FF
+; pad to 128KB
+	dcb.b	$20000-(EndSkip-RomTag),$FF
