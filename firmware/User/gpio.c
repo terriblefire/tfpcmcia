@@ -1,7 +1,7 @@
 #include "gpio.h"
 
 
-static void GPIO_Spi_Init(SPI_TypeDef *spi, GPIO_TypeDef *gpio, uint16_t pins) {
+static void GPIO_Spi_Init(SPI_TypeDef *spi, GPIO_TypeDef *gpio, uint16_t pins, uint16_t prescaler) {
 
     GPIO_InitTypeDef GPIO_InitStructure = {0};
     SPI_InitTypeDef SPI_InitStructure = {0};
@@ -19,7 +19,7 @@ static void GPIO_Spi_Init(SPI_TypeDef *spi, GPIO_TypeDef *gpio, uint16_t pins) {
     SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
     SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
     SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_8;
+    SPI_InitStructure.SPI_BaudRatePrescaler = prescaler;
     SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
     SPI_InitStructure.SPI_CRCPolynomial = 7;
     SPI_Init(spi, &SPI_InitStructure);
@@ -87,7 +87,7 @@ void GPIO_Config(void) {
     GPIO_Init(GPIOA, &GPIO_InitStructure);
     GPIO_WriteBit(GPIOA, GPIO_Pin_1, Bit_SET);
     RCC_APB2PeriphClockCmd (RCC_APB2Periph_SPI1, ENABLE);
-    GPIO_Spi_Init(SPI1, GPIOA, GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);  /* SCK, MISO, MOSI */
+    GPIO_Spi_Init(SPI1, GPIOA, GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7, SPI_BaudRatePrescaler_4);  /* SCK, MISO, MOSI */
 
    
     /* PA9 (USART1_TX): alternate function push-pull */
@@ -138,7 +138,7 @@ void GPIO_Config(void) {
     /* SPI3 remap: PC10=SCK, PC11=MISO, PC12=MOSI */
     GPIO_PinRemapConfig(GPIO_Remap_SPI3, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
-    GPIO_Spi_Init(SPI3, GPIOC, GPIO_Pin_10 | GPIO_Pin_12);  /* SCK, MOSI as AF_PP */
+    GPIO_Spi_Init(SPI3, GPIOC, GPIO_Pin_10 | GPIO_Pin_12, SPI_BaudRatePrescaler_8);  /* SCK, MOSI as AF_PP */
     /* MISO as input pull-up — holds MISO high when SD card releases the bus */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;

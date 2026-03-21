@@ -158,9 +158,9 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
 
 /* ---- Interrupt handler -------------------------------------------------- */
 
-//void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten));
+void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten, section(".ramtext")));
 
-void RAMFUNC PCMCIA_Handler(void) {
+void PCMCIA_Handler(void) {
     /* Assert /WAIT immediately — stalls the Amiga until we deassert.
      * Must be first: VTF latency is ~14 ns; Amiga samples at ~150 ns.
      * The flash ROM lookup would otherwise push us past the sample point. */
@@ -269,10 +269,10 @@ void PCMCIA_Init(void) {
     GPIO_SetBits(GPIOB, GPIO_Pin_14); // !WAIT
     GPIO_SetBits(GPIOA, GPIO_Pin_2); // READY
   
-    //NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-    //SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
-    //NVIC_SetPriority(EXTI9_5_IRQn, 0);
-    //NVIC_EnableIRQ(EXTI9_5_IRQn);
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
+    NVIC_SetPriority(EXTI9_5_IRQn, 0);
+    NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
 void RAMFUNC PCMCIA_PollLoop(void)
