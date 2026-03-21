@@ -9,7 +9,7 @@ int main(void) {
     Delay_Init();
     GPIO_Config();
     USART1_Init(115200);
-    Init_PCMCIA();
+    PCMCIA_Init();
 
     printf("tfpcmcia v0.2ready\r\n");
     printf("Testing sdcard\r\n");
@@ -17,15 +17,5 @@ int main(void) {
     LED2_GPIO_Port->OUTDR ^= LED2_Pin;
     uint16_t ctrl;
 
-
-    while (1) {
-    
-        ctrl = (uint16_t)GPIOB->INDR;
-        
-        if ((ctrl & STROBE_MASK) != STROBE_MASK)
-        {
-            PCMCIA_Handler();
-        }
-
-    }
+    PCMCIA_PollLoop();
 }

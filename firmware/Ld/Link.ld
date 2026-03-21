@@ -102,6 +102,7 @@ SECTIONS
 
 	.data :
 	{
+		*(.ramtext .ramtext.*)
 		*(.gnu.linkonce.r.*)
 		*(.data .data.*)
 		*(.gnu.linkonce.d.*)

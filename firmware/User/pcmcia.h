@@ -27,8 +27,9 @@ extern volatile uint32_t pcmcia_irq_count;
 extern volatile uint32_t pcmcia_mem_count;
 extern volatile uint32_t pcmcia_io_count;
 
-
-void Init_PCMCIA(void);
+void PCMCIA_Init(void);
 void PCMCIA_Handler(void);
+void PCMCIA_PollLoop(void);
+
 
 #endif /* __PCMCIA_H */

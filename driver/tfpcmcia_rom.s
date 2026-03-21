@@ -30,7 +30,6 @@ BOARD_CTRL	equ	$A00206
 
 ; Serial constants
 SERPER_9600	equ	$0173		; 9600 baud for PAL (3546895 / 9600 - 1)
-SERPER_19200	equ	$00B8		; 19200 baud for PAL (3546895 / 19200 - 1)
 
 TBE_BIT		equ	5		; bit 5 of SERDATR high byte = bit 13 (TBE)
 

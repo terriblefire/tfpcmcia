@@ -63,6 +63,21 @@ static void IOTaskEntry(void)
     IOTask();
 }
 
+static void ScanSPIRAM(struct ExecBase* SysBase)
+{
+    volatile UWORD* base = (volatile UWORD*)0x620000;
+
+    UWORD saved = *base;
+    *base = 0x55AA;
+    if (*base != 0x55AA) { kprintf("SPIRAM: probe failed\n"); return; }
+    *base = 0xAA55;
+    if (*base != 0xAA55) { kprintf("SPIRAM: probe failed\n"); *base = saved; return; }
+    *base = saved;
+
+    kprintf("SPIRAM: adding 0x620000-0xA00000 (%ld KB)\n", 0x3E0000UL / 1024);
+    AddMemList(0x3E0000, MEMF_PUBLIC | MEMF_FAST, -20, (APTR)0x620000, (STRPTR)"PCMCIA SRAM");
+}
+
 static struct DevBase* Init(
     register ULONG libraryBase __asm("d0"),
     register BPTR segList __asm("a0"),
@@ -152,6 +167,8 @@ static struct DevBase* Init(
 
     // Register device
     AddDevice((struct Device*)db);
+
+    ScanSPIRAM(SysBase);
 
     // Mount partitions from RDB
     if (db->db_CardType != SD_TYPE_NONE)

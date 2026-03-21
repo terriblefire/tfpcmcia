@@ -1,5 +1,14 @@
 #include "pcmcia.h"
 #include "gpio.h"
+#include "spiram.h"
+
+#define NDEBUG
+
+#ifdef NDEBUG
+#define RAMFUNC __attribute__((section(".ramtext")))
+#else
+#define RAMFUNC
+#endif         
 
 #define GPIO_SafeSetBits(GPIOx, GPIO_Pin) ((GPIOx)->BSHR = (GPIO_Pin))
 #define GPIO_SafeResetBits(GPIOx, GPIO_Pin) ((GPIOx)->BCR = (GPIO_Pin))
@@ -53,17 +62,17 @@ static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
 
 
 static __attribute__((always_inline)) uint16_t PCMCIA_Memory_Read(uint32_t addr) {
-    if (addr >= 0x10000u) {
+    if (addr >= 0x20000u) {
         return 0;
     }
-    uint32_t offset = addr & 0xFFFEu;  /* word-align within 64KB ROM */
+    uint32_t offset = addr & 0x1FFFEu;  /* word-align within 64KB ROM */
     return ((uint16_t)boot_rom[offset] << 8) | boot_rom[offset + 1];
 }
 
 /* CIS tuples for Amiga autoboot (CISTPL_AMIGAXIP with AUTORUN flag).
  * Attribute memory is byte-wide; each byte lives at an even address.
  * Index into cis_data[] using byte_offset >> 1 where byte_offset = addr & 0xFFFF. */
-static const uint8_t cis_data[] = {
+static uint8_t cis_data[] = {
     /* CISTPL_DEVICE (0x01): SRAM, 250ns, 4MB */
     0x01, 0x03, 0xd1, 0x27, 0xff,
 
@@ -151,7 +160,7 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
 
 //void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten));
 
-void PCMCIA_Handler(void) {
+void RAMFUNC PCMCIA_Handler(void) {
     /* Assert /WAIT immediately — stalls the Amiga until we deassert.
      * Must be first: VTF latency is ~14 ns; Amiga samples at ~150 ns.
      * The flash ROM lookup would otherwise push us past the sample point. */
@@ -160,9 +169,20 @@ void PCMCIA_Handler(void) {
     EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
     uint16_t ctrl = (uint16_t)GPIOB->INDR;
+
+    if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
+
     uint32_t addr  = ((uint32_t)(ctrl & 0x003Fu) << 16) | (uint16_t)GPIOE->INDR;
     uint16_t memory_value = ((ctrl & REG_MASK) == 0) ? PCMCIA_Reg_Read(addr) : PCMCIA_Memory_Read(addr);
     GPIOD->OUTDR = BUS16(memory_value);
+
+    if (((ctrl & REG_MASK) == 0) && (addr < 0x220000))
+    {
+        GPIOD->CFGLR = 0x33333333;
+        GPIOD->CFGHR = 0x33333333;
+        GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
+        goto exit;
+    }
 
     do 
     {
@@ -174,11 +194,40 @@ void PCMCIA_Handler(void) {
         // output enable set. 
         GPIOD->CFGLR = 0x33333333;
         GPIOD->CFGHR = 0x33333333;
+        if ((ctrl & REG_MASK) != 0)
+        { 
+            if (addr >= 0x20000)  
+            {
+                GPIOD->OUTDR = BUS16(SPIRAM_Read16(addr & 0x3FFFFE));
+            }
+        }
         GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
         while ((GPIOB->INDR & OE_MASK) != OE_MASK) {}
         GPIOD->CFGLR = 0x44444444;
         GPIOD->CFGHR = 0x44444444;
     } 
+    else if ((ctrl & WE_MASK) == 0)
+    {
+        if ((addr >= 0x20000) && (addr < 0x400000)) 
+        {
+            DELAY_100NS();
+            uint16_t data = BUS16((uint16_t)GPIOD->INDR);
+            if ((ctrl & STROBE_MASK) == 0)
+            {
+                SPIRAM_Write16(addr, data);
+            }
+            else if ((ctrl & UDS_MASK) == 0)
+            {
+                SPIRAM_Write8(addr, (data >> 8));
+            }
+            else if ((ctrl & LDS_MASK) == 0)
+            {
+                SPIRAM_Write8(addr | 0x01, data & 0xFF);
+            }
+            GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);       
+            while ((GPIOB->INDR & WE_MASK) != WE_MASK) {} 
+        }
+    }
     else if ((ctrl & IOW_MASK) == 0)
     {
         if (addr >= 0x220200)  
@@ -209,13 +258,13 @@ void PCMCIA_Handler(void) {
             GPIOD->CFGHR = 0x44444444;
         }
     }
-
+exit:
     GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
 }
 
 /* ---- Init --------------------------------------------------------------- */
 
-void Init_PCMCIA(void) {
+void PCMCIA_Init(void) {
 
     GPIO_SetBits(GPIOB, GPIO_Pin_14); // !WAIT
     GPIO_SetBits(GPIOA, GPIO_Pin_2); // READY
@@ -224,4 +273,19 @@ void Init_PCMCIA(void) {
     //SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
     //NVIC_SetPriority(EXTI9_5_IRQn, 0);
     //NVIC_EnableIRQ(EXTI9_5_IRQn);
+}
+
+void RAMFUNC PCMCIA_PollLoop(void)
+{
+    uint16_t ctrl;
+
+    while (1) 
+    {
+        ctrl = (uint16_t)GPIOB->INDR;
+        
+        if ((ctrl & STROBE_MASK) != STROBE_MASK)
+        {
+            PCMCIA_Handler();
+        }
+    }
 }
