@@ -74,8 +74,8 @@ static void ScanSPIRAM(struct ExecBase* SysBase)
     if (*base != 0xAA55) { kprintf("SPIRAM: probe failed\n"); *base = saved; return; }
     *base = saved;
 
-    kprintf("SPIRAM: adding 0x620000-0xA00000 (%ld KB)\n", 0x3E0000UL / 1024);
-    AddMemList(0x3E0000, MEMF_PUBLIC | MEMF_FAST, -20, (APTR)0x620000, (STRPTR)"PCMCIA SRAM");
+    kprintf("SPIRAM: adding 0x620000-0x720000 (1024 KB)\n");
+    AddMemList(0x100000, MEMF_PUBLIC | MEMF_FAST, 0, (APTR)0x620000, (STRPTR)"PCMCIA SRAM");
 }
 
 static struct DevBase* Init(
