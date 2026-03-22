@@ -8,9 +8,9 @@ CC      = riscv-none-embed-gcc
 OBJCOPY = riscv-none-embed-objcopy
 SIZE    = riscv-none-embed-size
 
-MCU_FLAGS = -march=rv32imafc -mabi=ilp32f -msmall-data-limit=8
+MCU_FLAGS = -march=rv32imafc -mabi=ilp32 -msmall-data-limit=8
 
-CFLAGS  = $(MCU_FLAGS) -Os -std=gnu99 \
+CFLAGS  = $(MCU_FLAGS) -Ofast -std=gnu99 \
           -ffunction-sections -fdata-sections \
           -Wall -Wno-unused-function \
           -DUSE_STDPERIPH_DRIVER -DCH32V30x_D8C \

@@ -17,10 +17,5 @@ int main(void) {
     LED2_GPIO_Port->OUTDR ^= LED2_Pin;
     uint16_t ctrl;
 
-    while (1) {
-
-        Delay_Ms(1);
-
-
-    }
+    PCMCIA_PollLoop();
 }

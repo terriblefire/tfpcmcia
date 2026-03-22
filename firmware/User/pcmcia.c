@@ -21,6 +21,28 @@
     __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
+typedef struct {
+    /* GPIO port D configuration words */
+    uint32_t BusOn;      /* 0x33333333 — CFGLR/CFGHR: output 50 MHz push-pull */
+    uint32_t BusOff;     /* 0x44444444 — CFGLR/CFGHR: input floating          */
+    /* ROM address space */
+    uint32_t RomSize;    /* 0x020000   — 128 KB ROM upper bound (exclusive)    */
+    uint32_t RomMask;    /* 0x1FFFE    — word-align mask within 128 KB         */
+    /* I/O address space */
+    uint32_t IoBase;     /* 0x220000   — first address decoded as I/O          */
+    uint32_t IoRegBase;  /* 0x220200   — first address with I/O registers      */
+    /* GPIOB control-signal masks */
+    uint32_t AccessMask; /* 0x001980   — OE | WE | IOR | IOW                  */
+    uint32_t IorMask;    /* 0x000800   — IOR bit                               */
+    uint32_t IowMask;    /* 0x001000   — IOW bit                               */
+    /* SPIRAM address space */
+    uint32_t SpiRamBase; /* 0x020000   — SPIRAM region start                  */
+    uint32_t SpiRamMask; /* 0x3FFFFE   — word-align mask within 4 MB SPIRAM   */
+    uint32_t SpiRamSize; /* 0x400000   — SPIRAM upper bound (exclusive)        */
+} PcmciaConstants;
+
+static PcmciaConstants K __attribute__((section(".sdata")));
+
 /* ---- Dispatch functions -------------------------------------------------
  * Must be always_inline: PCMCIA_Handler uses WCH-Interrupt-fast which does
  * not save/restore caller-saved registers. Calling a normal function from
@@ -62,10 +84,10 @@ static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
 
 
 static __attribute__((always_inline)) uint16_t PCMCIA_Memory_Read(uint32_t addr) {
-    if (addr >= 0x20000u) {
+    if (addr >= K.RomSize) {
         return 0;
     }
-    uint32_t offset = addr & 0x1FFFEu;  /* word-align within 64KB ROM */
+    uint32_t offset = addr & K.RomMask;  /* word-align within 128KB ROM */
     return ((uint16_t)boot_rom[offset] << 8) | boot_rom[offset + 1];
 }
 
@@ -158,7 +180,7 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
 
 /* ---- Interrupt handler -------------------------------------------------- */
 
-void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten, section(".ramtext")));
+//void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten, section(".ramtext")));
 
 void PCMCIA_Handler(void) {
     /* Assert /WAIT immediately — stalls the Amiga until we deassert.
@@ -166,7 +188,7 @@ void PCMCIA_Handler(void) {
      * The flash ROM lookup would otherwise push us past the sample point. */
     GPIO_SafeResetBits(GPIOB, GPIO_Pin_14);
 
-    EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
+    //EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
     uint16_t ctrl = (uint16_t)GPIOB->INDR;
 
@@ -176,10 +198,10 @@ void PCMCIA_Handler(void) {
     uint16_t memory_value = ((ctrl & REG_MASK) == 0) ? PCMCIA_Reg_Read(addr) : PCMCIA_Memory_Read(addr);
     GPIOD->OUTDR = BUS16(memory_value);
 
-    if (((ctrl & REG_MASK) == 0) && (addr < 0x220000))
+    if (((ctrl & REG_MASK) == 0) && (addr < K.IoBase))
     {
-        GPIOD->CFGLR = 0x33333333;
-        GPIOD->CFGHR = 0x33333333;
+        GPIOD->CFGLR = K.BusOn;
+        GPIOD->CFGHR = K.BusOn;
         GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
         goto exit;
     }
@@ -187,30 +209,29 @@ void PCMCIA_Handler(void) {
     do 
     {
         ctrl = (uint16_t)GPIOB->INDR;
-    } while ((ctrl & ACCESS_MASK) == ACCESS_MASK);
+    } while ((ctrl & K.AccessMask) == K.AccessMask);
     
     if ((ctrl & OE_MASK) == 0) 
     {
-        // output enable set. 
-        GPIOD->CFGLR = 0x33333333;
-        GPIOD->CFGHR = 0x33333333;
+        // output enable set.
+        GPIOD->CFGLR = K.BusOn;
+        GPIOD->CFGHR = K.BusOn;
         if ((ctrl & REG_MASK) != 0)
-        { 
-            if (addr >= 0x20000)  
+        {
+            if (addr >= K.SpiRamBase)
             {
-                GPIOD->OUTDR = BUS16(SPIRAM_Read16(addr & 0x3FFFFE));
+                GPIOD->OUTDR = BUS16(SPIRAM_Read16(addr & K.SpiRamMask));
             }
         }
         GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
         while ((GPIOB->INDR & OE_MASK) != OE_MASK) {}
-        GPIOD->CFGLR = 0x44444444;
-        GPIOD->CFGHR = 0x44444444;
+        GPIOD->CFGLR = K.BusOff;
+        GPIOD->CFGHR = K.BusOff;
     } 
     else if ((ctrl & WE_MASK) == 0)
     {
-        if ((addr >= 0x20000) && (addr < 0x400000)) 
+        if ((addr >= K.SpiRamBase) && (addr < K.SpiRamSize)) 
         {
-            DELAY_100NS();
             uint16_t data = BUS16((uint16_t)GPIOD->INDR);
             if ((ctrl & STROBE_MASK) == 0)
             {
@@ -228,34 +249,31 @@ void PCMCIA_Handler(void) {
             while ((GPIOB->INDR & WE_MASK) != WE_MASK) {} 
         }
     }
-    else if ((ctrl & IOW_MASK) == 0)
+    else if ((ctrl & K.IowMask) == 0)
     {
-        if (addr >= 0x220200)  
+        if (addr >= K.IoRegBase)
         {
-            // Write cycle: GPIOD stays floating; read data the Amiga is driving 
+            // Write cycle: GPIOD stays floating; read data the Amiga is driving
             uint16_t data = BUS16((uint16_t)GPIOD->INDR);
             PCMCIA_IO_Write(addr, data);
             //printf("IO Write: %08X = 0x%04X\n", addr, data);
             GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
-            while ((GPIOB->INDR & IOW_MASK) != IOW_MASK) {}    
-        }            
+            while ((GPIOB->INDR & K.IowMask) != K.IowMask) {}
+        }
     }
-    else if ((ctrl & IOR_MASK) == 0)
-    {   
-        if (addr >= 0x220200)  
+    else if ((ctrl & K.IorMask) == 0)
+    {
+        if (addr >= K.IoRegBase)
         {
-            // output enable set. 
+            // output enable set.
             uint16_t val = PCMCIA_IO_Read(addr);
-            //printf("IO Read: %08X=0x%04X\n", addr, val);
-
             GPIOD->OUTDR = BUS16(val);
-            GPIOD->CFGLR = 0x33333333;
-            GPIOD->CFGHR = 0x33333333;
-            DELAY_100NS();
+            GPIOD->CFGLR = K.BusOn;
+            GPIOD->CFGHR = K.BusOn;
             GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
-            while ((GPIOB->INDR & IOR_MASK) != IOR_MASK) {}
-            GPIOD->CFGLR = 0x44444444;
-            GPIOD->CFGHR = 0x44444444;
+            while ((GPIOB->INDR & K.IorMask) != K.IorMask) {}
+            GPIOD->CFGLR = K.BusOff;
+            GPIOD->CFGHR = K.BusOff;
         }
     }
 exit:
@@ -266,13 +284,26 @@ exit:
 
 void PCMCIA_Init(void) {
 
+    K.BusOn      = 0x33333333u;
+    K.BusOff     = 0x44444444u;
+    K.RomSize    = 0x020000u;
+    K.RomMask    = 0x1FFFEu;
+    K.IoBase     = 0x220000u;
+    K.IoRegBase  = 0x220200u;
+    K.AccessMask = ACCESS_MASK;
+    K.IorMask    = IOR_MASK;
+    K.IowMask    = IOW_MASK;
+    K.SpiRamBase = 0x020000u;
+    K.SpiRamMask = 0x3FFFFEu;
+    K.SpiRamSize = 0x400000u;
+
     GPIO_SetBits(GPIOB, GPIO_Pin_14); // !WAIT
     GPIO_SetBits(GPIOA, GPIO_Pin_2); // READY
   
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-    SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
-    NVIC_SetPriority(EXTI9_5_IRQn, 0);
-    NVIC_EnableIRQ(EXTI9_5_IRQn);
+    //NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    //SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
+    //NVIC_SetPriority(EXTI9_5_IRQn, 0);
+    //NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
 void RAMFUNC PCMCIA_PollLoop(void)
