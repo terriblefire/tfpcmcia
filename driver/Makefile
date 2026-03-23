@@ -13,7 +13,7 @@ all: tfpcmcia.device tfpcmcia.rom
 tfpcmcia.device: $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) -lgcc
 
-tfpcmcia.rom: tfpcmcia_rom.s tfpcmcia.device std_lz4.bin
+tfpcmcia.rom: tfpcmcia_rom.s tfpcmcia.device std_bootrom.bin
 	$(AS) $(VASFLAGS) -o $@ $<
 
 %.o: %.c
