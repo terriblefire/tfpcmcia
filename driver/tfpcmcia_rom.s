@@ -2,31 +2,39 @@
 ;
 ; Assembled with: vasmm68k_mot -Fbin -no-opt -o tfpcmcia.rom tfpcmcia_rom.s
 ;
-; This ROM lives at $600000 (PCMCIA common memory) and is executed via
-; Amiga XIP (Execute-In-Place). Kickstart's card.resource finds the
-; CISTPL_AMIGAXIP tuple in attribute memory, which points at the RomTag
-; here. InitResident() is called with A6=ExecBase, D0=0.
+; This ROM is exposed through attribute memory at $A00200 (offset $100).
+; The board presents two CIS configurations, switched via BOARD_CTRL:
 ;
-; The init code:
+; DIAG phase (cold boot, BOARD_CTRL=0):
+;   Coldstart finds CISTPL_AMIGAXIP with flag=$23 (DIAG mode), reads a
+;   4-byte offset ($400200), and JMPs to $600000+offset = $A00200.
+;   The DIAG entry (BRA.W) jumps to DiagHandler which writes BOARD_CTRL
+;   to switch CIS from DIAG to XIP, then returns via JMP (A5).
+;
+; XIP phase (after card.resource init, BOARD_CTRL=1):
+;   IfAmigaXIP() finds CISTPL_AMIGAXIP with TP_XIPLOC=$400204 and
+;   TP_XIPFLAGS=$01 (AUTORUN). This points to the RomTag at $A00204.
+;   strap/boot calls InitResident() with A6=ExecBase, D0=0.
+;
+; Because the code runs from attribute memory (not common memory),
+; switching BOARD_CTRL to SPIRAM mode does not unmap this ROM.
+;
+; The XIP init code:
 ;   1. Sets 9600 baud serial, prints "TF\n"
 ;   2. Loads the embedded tfpcmcia.device (Amiga hunk executable) from ROM
 ;      into Amiga RAM (parse hunks, allocate, copy, relocate)
 ;   3. Scans the loaded code for a RomTag
 ;   4. Calls InitResident() to register the device driver
-;   5. Switches the board from boot ROM mode to SPIRAM mode
 
-BASE		equ	$600000
+BASE		equ	$A00200
+
+; PCMCIA I/O space registers
+BOARD_CTRL_IO	equ	$A20206	; BOARD_CTRL register (I/O offset $103 * 2)
 
 ; Amiga hardware registers
 SERDAT		equ	$DFF030
 SERPER		equ	$DFF032
 SERDATR		equ	$DFF018
-
-; PCMCIA board registers (attribute memory, even byte addresses)
-SPI_DATA	equ	$A00200
-SPI_CS		equ	$A00202
-SPI_STATUS	equ	$A00204
-BOARD_CTRL	equ	$A00206
 
 ; Serial constants
 SERPER_9600	equ	$0173		; 9600 baud for PAL (3546895 / 9600 - 1)
@@ -60,9 +68,23 @@ MAX_HUNKS	equ	8
 	org	BASE
 
 ;---------------------------------------------------------------------------
-; RomTag (struct Resident)
+; DIAG entry point — coldstart JMPs here when it finds CISTPL_AMIGAXIP
+; with flag=0x23. A5 holds the return address (cs_skipCart).
+;---------------------------------------------------------------------------
+DiagEntry:
+	ifne	DiagEntry-$A00200
+	fail	"DiagEntry must be at $A00200"
+	endc
+	bra.w	DiagHandler		; 4 bytes, skip to handler below
+
+;---------------------------------------------------------------------------
+; RomTag (struct Resident) — at BASE+4 ($A00204)
+; XIP CIS TP_XIPLOC points here for IfAmigaXIP() → InitResident()
 ;---------------------------------------------------------------------------
 RomTag:
+	ifne	RomTag-$A00204
+	fail	"RomTag must be at $A00204"
+	endc
 	dc.w	RTC_MATCHWORD		; rt_MatchWord
 	dc.l	RomTag			; rt_MatchTag
 	dc.l	EndSkip			; rt_EndSkip
@@ -89,14 +111,14 @@ Init:
 	movem.l	d2-d7/a2-a6,-(sp)
 	move.l	a6,a5			; a5 = ExecBase (preserve across calls)
 
+	move.b	#$00,BOARD_CTRL_IO	; switch BOARD_CTRL back to DIAG mode (for reset)
+
 	; set serial baud rate
 	move.w	#SERPER_9600,SERPER
 
 	; print "TF\n"
 	lea	str_tf(pc),a0
 	bsr	ser_puts
-
-	bsr SimonTopDog
 
 	;-------------------------------------------------------------------
 	; Load embedded tfpcmcia.device from ROM into Amiga RAM
@@ -110,13 +132,13 @@ Init:
 
 	lea	str_badhunk(pc),a0
 	bsr	ser_puts
-	bra	.switchSpiram
+	bra	.badHunk
 
 .hunkOk:
 	; Skip resident library names (should be 0)
 	bsr	read_long
 	tst.l	d0
-	bne	.switchSpiram
+	bne	.badHunk
 
 	; Read table size (number of hunks), first hunk, last hunk
 	bsr	read_long		; d0 = table size (in longs)
@@ -138,7 +160,6 @@ Init:
 	bsr	read_long		; d0 = size in longwords (may have mem flags in upper bits)
 	and.l	#$3FFFFFFF,d0		; mask off memory flags
 	lsl.l	#2,d0			; convert to bytes
-	move.l	d0,d3			; d3 = hunk size in bytes
 
 	; Allocate hunk memory (+ 4 bytes for BPTR link at start)
 	add.l	#4,d0
@@ -341,43 +362,24 @@ Init:
 	move.l	a5,a6			; a6 = ExecBase
 	jsr	_LVOInitResident(a6)
 
-.freeTable:
-	; Free hunk table from stack
-	add.w	#MAX_HUNKS*4,sp
-	bra.s	.switchSpiram
+	; if we return here, we did not find a boot node
+	lea	str_done(pc),a0
+	bsr	ser_puts
+
+	bra.b	.freeTable
 
 .allocFail:
 	lea	str_nomem(pc),a0
 	bsr	ser_puts
+
+.freeTable:
+	; Free hunk table from stack
 	add.w	#MAX_HUNKS*4,sp
 
-.switchSpiram:
-	; We're executing from ROM at $600000. Switching to SPIRAM mode
-	; will unmap this ROM, so we must copy the final instructions to
-	; RAM (the stack) and jump there.
-	lea	.trampoline(pc),a0
-	move.l	#(.trampEnd-.trampoline),d0
-	sub.l	d0,sp			; reserve space on stack
-	move.l	sp,a1
-.copyTramp:
-	move.b	(a0)+,(a1)+
-	subq.l	#1,d0
-	bne.s	.copyTramp
-
-	; Flush caches before executing from stack
-	move.l	a5,a6
-	jsr	_LVOCacheClearU(a6)
-	jmp	(sp)			; jump to trampoline on stack
-
-	; This code is copied to RAM and executed from there.
-	; No PC-relative references allowed — only absolute addresses.
-.trampoline:
-	move.b	#$01,BOARD_CTRL		; switch to SPIRAM
-	adda.w	#(.trampEnd-.trampoline),sp	; skip past trampoline on stack
+.badHunk:
 	movem.l	(sp)+,d2-d7/a2-a6
 	moveq	#0,d0
 	rts
-.trampEnd:
 
 ;---------------------------------------------------------------------------
 ; read_long - read a 32-bit big-endian value from ROM at (a2)
@@ -393,9 +395,10 @@ read_long:
 ;---------------------------------------------------------------------------
 str_tf:		dc.b	"TF TopDOG!",$0A,0
 str_badhunk:	dc.b	"bad hunk",$0A,0
-str_nort:	dc.b	"no RT",$0A,0
+str_nort:	dc.b	"no RomTag",$0A,0
 str_nomem:	dc.b	"no mem",$0A,0
-str_initres:	dc.b	"IR",$0A,0
+str_initres:	dc.b	"InitResident() ->",$0A,0
+str_done:	dc.b	"XIP done; no boot node",$0A,0
 	even
 
 ;---------------------------------------------------------------------------
@@ -426,6 +429,37 @@ ser_puts:
 	rts
 
 ;---------------------------------------------------------------------------
+; DiagHandler — called by coldstart via DIAG CIS
+; Switches CIS from DIAG to XIP mode, then returns to coldstart.
+; in:  A5 = return address (cs_skipCart)
+;---------------------------------------------------------------------------
+DiagHandler:
+	move.b	#$01,BOARD_CTRL_IO	; switch BOARD_CTRL to XIP/SPIRAM mode
+
+	; turn on CHIP
+	and.b	#$fe,$bfe001		; OVL = 0
+	or.b	#$01,$bfe201		; OVL = output
+
+	lea		$20000,a7
+	lea		SimonTopDog(pc),a0
+	move.l	a7,a1
+	move.w	#(SimonTopDogEnd-SimonTopDog)/16-1,d7
+.copy
+	rept 4
+	move.l	(a0)+,(a1)+
+	endr
+	dbf		d7,.copy
+
+	move.l	a7,a0
+	jsr		(a0)
+
+	; turn off CHIP
+	or.b	#$01,$bfe001		; OVL = 1
+	and.b	#$fe,$bfe201		; OVL = input (pull-up)
+
+	jmp	(a5)			; return to coldstart
+
+;---------------------------------------------------------------------------
 ; Embedded device binary
 ;---------------------------------------------------------------------------
 	even
@@ -433,9 +467,12 @@ DeviceBinary:
 	incbin	"tfpcmcia.device"
 DeviceBinaryEnd:
 SimonTopDog:
-	incbin	"std_lz4.bin"
+	incbin	"std_bootrom.bin"
+	cnop	0,16
+SimonTopDogEnd:
+
 
 EndSkip:
 
-; pad to 128KB
-	dcb.b	$20000-(EndSkip-RomTag),$FF
+; pad to $1FE00 bytes (128KB attribute space minus $200 for CIS)
+	dcb.b	$1FE00-(EndSkip-DiagEntry),$FF

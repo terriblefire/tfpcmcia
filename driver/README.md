@@ -8,7 +8,7 @@ The board plugs into the A1200's PCMCIA slot and provides:
 
 - **4MB SPIRAM** mapped into the PCMCIA common memory space ($600000–$9FFFFF), usable as fast RAM
 - **SPI SD card interface** exposed through I/O space registers
-- **128KB boot ROM** that loads and initializes the device driver at cold boot, then switches to SPIRAM mode
+- **128KB boot ROM** in attribute memory that loads and initializes the device driver
 
 The CH32V307 MCU on the board handles SPI bus arbitration and SD card communication. The Amiga CPU communicates with it through memory-mapped registers in the PCMCIA I/O space.
 
@@ -16,7 +16,12 @@ The CH32V307 MCU on the board handles SPI bus arbitration and SD card communicat
 
 ### Common Memory ($600000–$9FFFFF)
 
-At power-on, the first 128KB ($600000–$61FFFF) contains the boot ROM. After the driver initializes, `BOARD_CTRL` bit 0 switches this region to SPIRAM, giving the full 4MB to the system.
+4MB SPIRAM, always available. Added as expansion memory by the device driver.
+
+### Attribute Memory ($A00000–$A1FFFF)
+
+- `$A00000`–`$A001FE`: CIS tuples (even bytes only, switched via BOARD_CTRL)
+- `$A00200`+: 128KB boot ROM (read-only, contains DIAG entry, RomTag, and embedded device driver)
 
 ### I/O Space Registers ($A20000+)
 
@@ -27,23 +32,50 @@ All registers are at even byte addresses (68000 bus convention):
 | `$A20200`  | `SPI_DATA`   | R/W | SPI data register — write a byte to clock it out, read to get the byte clocked in |
 | `$A20202`  | `SPI_CS`     | W   | SPI chip select — `$00` = assert (active), `$FF` = deassert |
 | `$A20204`  | `SPI_STATUS` | R   | Status register — bit 0: SD card detect (1 = card present) |
-| `$A20206`  | `BOARD_CTRL` | W   | Board control — bit 0: SPIRAM mode (1 = SPIRAM, 0 = boot ROM) |
+| `$A20206`  | `BOARD_CTRL` | R/W | Board control — bit 0: CIS select (0 = DIAG CIS, 1 = XIP CIS) |
 | `$A20208`  | `BOARD_ID`   | R   | Board identification — reads `$01` |
 
 ## Boot Sequence
 
-1. **CIS parsing** — Kickstart's `card.resource` reads the Card Information Structure from attribute memory and finds the `CISTPL_AMIGAXIP` (Execute-In-Place) tuple
-2. **XIP entry** — Kickstart calls `InitResident()` on the RomTag at `$600000`
-3. **Boot ROM init** — The ROM code:
+The board uses a dual-CIS scheme with DIAG and XIP phases:
+
+### Phase 1: DIAG (coldstart, BOARD_CTRL=0)
+
+1. **Coldstart** enables the credit card interface and reads CIS at `$A00000`
+2. Finds `CISTPL_AMIGAXIP` with flag=`$23` (DIAG mode) and a 4-byte offset
+3. JMPs to `$600000 + offset` = `$A00200` (DIAG entry in attribute memory)
+4. DIAG entry (`BRA.W DiagHandler`) runs the DIAG handler which:
+   - Writes BOARD_CTRL to switch CIS from DIAG to XIP
+   - Returns to coldstart via `JMP (A5)`
+5. Coldstart disables the credit card interface and continues boot
+
+### Phase 2: XIP (after card.resource init, BOARD_CTRL=1)
+
+1. `card.resource` initializes and re-enables the credit card interface
+2. `IfAmigaXIP()` reads the XIP CIS, finds `CISTPL_AMIGAXIP` with `TP_XIPLOC=$400204` and `TP_XIPFLAGS=$01` (AUTORUN)
+3. `strap/boot` calls `InitResident()` on the RomTag at `$A00204`
+4. **XIP init code**:
    - Parses the embedded `tfpcmcia.device` (Amiga hunk executable) from ROM
    - Allocates RAM, copies hunks, applies HUNK_RELOC32 relocations
    - Flushes the CPU caches (`CacheClearU`)
    - Scans for a RomTag in the loaded code and calls `InitResident()` on it
-4. **Device init** — `tfpcmcia.device` registers itself, initializes the SD card via SPI, creates an I/O task, then scans the SD card for an RDB (Rigid Disk Block)
-5. **RDB mounting** — Reads partition table, loads any filesystem handlers from LSEG blocks, creates DOS nodes via `MakeDosNode`/`AddBootNode`
-6. **DOS boot** — Calls `InitResident("dos.library")` to start AmigaDOS, which picks the highest-priority bootable partition
+5. **Device init** — `tfpcmcia.device` registers itself, initializes the SD card via SPI, creates an I/O task, adds SPIRAM as expansion memory, then scans the SD card for an RDB (Rigid Disk Block)
+6. **RDB mounting** — Reads partition table, loads any filesystem handlers from LSEG blocks, creates DOS nodes via `MakeDosNode`/`AddBootNode`
+7. **DOS boot** — Calls `InitResident("dos.library")` to start AmigaDOS, which picks the highest-priority bootable partition
 
-After initialization, the boot ROM copies a small trampoline to the stack, flushes caches, jumps to it, and writes `BOARD_CTRL` to switch from ROM to SPIRAM mode. The 4MB SPIRAM is then available as expansion memory.
+If no bootable partition is found, InitResident returns and the XIP init exits cleanly. The device driver and SPIRAM remain available.
+
+## Boot ROM Layout (attribute memory $A00200+)
+
+```
+$A00200: BRA.W DiagHandler     ; DIAG entry (4 bytes)
+$A00204: RomTag                ; XIP entry ($4AFC matchword)
+         ...
+         Init                  ; XIP init function
+         DiagHandler           ; switches CIS, returns via JMP (A5)
+         DeviceBinary          ; embedded tfpcmcia.device
+         SimonTopDog           ; early boot code
+```
 
 ## MAME Testing
 
@@ -53,7 +85,7 @@ The board is emulated in MAME as the `tfpcmcia` PCMCIA device. To test with the 
 mame a1200 -pcmcia tfpcmcia -hard2 sdcard.hdf -debug
 ```
 
-The MAME emulation (`tfpcmcia.cpp`) implements the full register set, SPI SD card interface, boot ROM, and SPIRAM switching. The boot ROM binary is loaded from the MAME ROM path.
+The MAME emulation (`tfpcmcia.cpp`) implements the full register set, SPI SD card interface, boot ROM, dual CIS switching, and SPIRAM. The boot ROM binary is loaded from the MAME ROM path.
 
 To see the driver's serial debug output (`kprintf`), add a null modem on the RS-232 port and listen with netcat:
 
