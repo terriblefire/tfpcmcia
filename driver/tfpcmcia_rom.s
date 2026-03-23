@@ -35,6 +35,8 @@ BOARD_CTRL_IO	equ	$A20206	; BOARD_CTRL register (I/O offset $103 * 2)
 SERDAT		equ	$DFF030
 SERPER		equ	$DFF032
 SERDATR		equ	$DFF018
+GAYLE_STATUS	equ	$DA8000		; Gayle status register
+GAYLE_CHANGE	equ	$DA9000		; Gayle change register
 
 ; Serial constants
 SERPER_9600	equ	$0173		; 9600 baud for PAL (3546895 / 9600 - 1)
@@ -435,6 +437,16 @@ ser_puts:
 ;---------------------------------------------------------------------------
 DiagHandler:
 	move.b	#$01,BOARD_CTRL_IO	; switch BOARD_CTRL to XIP/SPIRAM mode
+
+	; KS 3.0 fix: card.resource 37.11 checks Gayle status register bit 6
+	; (CC_DET) to detect PCMCIA cards. On real hardware, Gayle continuously
+	; samples the CD pins. Toggling the PCMCIA disable bit (bit 0) forces
+	; Gayle to re-sample, ensuring card.resource sees the card.
+	; card.resource 40.x (KS 3.1) does this itself; 37.11 does not.
+	move.b	#$01,GAYLE_STATUS	; disable PCMCIA interface (set bit 0)
+	move.b	#$00,GAYLE_STATUS	; re-enable → Gayle re-samples CD lines
+	move.b	#$BC,GAYLE_CHANGE	; clear CC_DET change flag (bit 6) to prevent
+					; OwnCard's $FE write from triggering Gayle reset
 
 	; turn on CHIP
 	and.b	#$fe,$bfe001		; OVL = 0
