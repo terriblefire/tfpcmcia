@@ -82,11 +82,6 @@ static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
 }
 
 
-static uint8_t cis_data_diag[] = {                                                                                                                                                                                                                         
-     //  (0x91) - DIAG mode                                                                                                                                                                                                                 
-     0x91, 0x05, 0x23, 0x00, 0x00, 0x00, 0x00,
-     0xFF
-};
 
 /* CIS tuples for Amiga autoboot (CISTPL_AMIGAXIP with AUTORUN flag).
  * Attribute memory is byte-wide; each byte lives at an even address.
@@ -107,14 +102,13 @@ static uint8_t cis_data[] = {
     0x21, 0x02, 0x01, 0x00,
 
     /* CISTPL_AMIGAXIP (0x91): execute-in-place, AUTORUN flag set */
-    0x91, 0x06, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00,
+    0x91, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
 
     /* CISTPL_END */
     0xff,
 };
 
 
-#define CIS_LEN_DIAG  ((uint32_t)(sizeof(cis_data_diag)))
 #define CIS_LEN  ((uint32_t)(sizeof(cis_data)))
 
 /* Register offsets (byte_offset = addr & 0xFFFF, MAME word-offset * 2) */
@@ -139,16 +133,7 @@ static __attribute__((always_inline)) uint16_t PCMCIA_Reg_Read(uint32_t addr) {
     if (offset < 0x200u) {
         uint8_t b;
         uint32_t idx = offset >> 1;
-        if ((pcmica_board_ctrl & 1) == 0)
-        {
-            /* CIS space: each CIS byte at an even address */
-            b = (idx < CIS_LEN_DIAG) ? cis_data_diag[idx] : 0xFFu;
-        }
-        else 
-        {
-            b = (idx < CIS_LEN) ? cis_data[idx] : 0xFFu;
-        }
-
+        b = (idx < CIS_LEN) ? cis_data[idx] : 0xFFu;
         return (uint16_t)b << 8;  /* big-endian: byte on upper (even) lane */
     }
 
