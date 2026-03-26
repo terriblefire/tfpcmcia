@@ -82,14 +82,11 @@ static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
 }
 
 
-
-static __attribute__((always_inline)) uint16_t PCMCIA_Memory_Read(uint32_t addr) {
-    if (addr >= K.RomSize) {
-        return 0;
-    }
-    uint32_t offset = addr & K.RomMask;  /* word-align within 128KB ROM */
-    return ((uint16_t)boot_rom[offset] << 8) | boot_rom[offset + 1];
-}
+static uint8_t cis_data_diag[] = {                                                                                                                                                                                                                         
+     //  (0x91) - DIAG mode                                                                                                                                                                                                                 
+     0x91, 0x05, 0x23, 0x00, 0x00, 0x00, 0x00,
+     0xFF
+};
 
 /* CIS tuples for Amiga autoboot (CISTPL_AMIGAXIP with AUTORUN flag).
  * Attribute memory is byte-wide; each byte lives at an even address.
@@ -110,12 +107,14 @@ static uint8_t cis_data[] = {
     0x21, 0x02, 0x01, 0x00,
 
     /* CISTPL_AMIGAXIP (0x91): execute-in-place, AUTORUN flag set */
-    0x91, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+    0x91, 0x06, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00,
 
     /* CISTPL_END */
     0xff,
 };
 
+
+#define CIS_LEN_DIAG  ((uint32_t)(sizeof(cis_data_diag)))
 #define CIS_LEN  ((uint32_t)(sizeof(cis_data)))
 
 /* Register offsets (byte_offset = addr & 0xFFFF, MAME word-offset * 2) */
@@ -127,15 +126,33 @@ static uint8_t cis_data[] = {
 
 #define BOARD_ID_VALUE  0x01u
 
-static __attribute__((always_inline)) uint16_t PCMCIA_Reg_Read(uint32_t addr) {
-    uint32_t byte_offset = addr & 0xFFFFu;
+static uint8_t pcmica_board_ctrl = 0; 
 
-    if (byte_offset < 0x200u) {
-        /* CIS space: each CIS byte at an even address */
-        uint32_t idx = byte_offset >> 1;
-        uint8_t b = (idx < CIS_LEN) ? cis_data[idx] : 0xFFu;
+static __attribute__((always_inline)) uint16_t PCMCIA_ROM_Read(uint32_t addr) {
+    uint32_t offset = addr & K.RomMask;  /* word-align within 128KB ROM */
+    return ((uint16_t)boot_rom[offset] << 8) | boot_rom[offset + 1];
+}
+static __attribute__((always_inline)) uint16_t PCMCIA_Reg_Read(uint32_t addr) {
+    
+    uint32_t offset = addr & K.RomMask;  /* word-align within 128KB ROM */
+
+    if (offset < 0x200u) {
+        uint8_t b;
+        uint32_t idx = offset >> 1;
+        if ((pcmica_board_ctrl & 1) == 0)
+        {
+            /* CIS space: each CIS byte at an even address */
+            b = (idx < CIS_LEN_DIAG) ? cis_data_diag[idx] : 0xFFu;
+        }
+        else 
+        {
+            b = (idx < CIS_LEN) ? cis_data[idx] : 0xFFu;
+        }
+
         return (uint16_t)b << 8;  /* big-endian: byte on upper (even) lane */
     }
+
+    return 0;
 }
 
 static __attribute__((always_inline)) uint16_t PCMCIA_IO_Read(uint32_t addr) {
@@ -148,17 +165,10 @@ static __attribute__((always_inline)) uint16_t PCMCIA_IO_Read(uint32_t addr) {
         case REG_SPI_STATUS: {
             return (uint16_t) SD_CARD_PRESENT() << 8;
         }
-        case REG_BOARD_CTRL: return 0x0000u;
+        case REG_BOARD_CTRL: return (uint16_t)pcmica_board_ctrl << 8;
         case REG_BOARD_ID:   return (uint16_t)BOARD_ID_VALUE << 8;
         default:             return 0xFF00u;
     }
-}
-
-static __attribute__((always_inline)) void PCMCIA_Memory_Write(uint32_t addr, uint16_t data) {
-    if (addr >= 0x10000u) {
-        //SPIRAM_Write16(addr - 0x10000u, data);
-    }
-    /* writes to ROM region ignored */
 }
 
 static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16_t data) {
@@ -166,10 +176,14 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
     uint8_t b = (uint8_t)(data >> 8);  /* driver byte is on upper lane */
 
     switch (byte_offset) {
+        case REG_BOARD_CTRL: 
+            pcmica_board_ctrl = b;
+            break; 
         case REG_SPI_DATA:
             sd_xfer(b);
             break;
         case REG_SPI_CS:
+            pcmica_board_ctrl = 0;
             b &= 0x01;
             if (b == 0x00u) SD_CS_LOW() else SD_CS_HIGH();
             break;
@@ -180,29 +194,27 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
 
 /* ---- Interrupt handler -------------------------------------------------- */
 
-//void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten, section(".ramtext")));
+void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten, section(".ramtext")));
 
 void PCMCIA_Handler(void) {
-    /* Assert /WAIT immediately — stalls the Amiga until we deassert.
-     * Must be first: VTF latency is ~14 ns; Amiga samples at ~150 ns.
-     * The flash ROM lookup would otherwise push us past the sample point. */
+    /* Assert /WAIT immediately — stalls the Amiga until we deassert. */
     GPIO_SafeResetBits(GPIOB, GPIO_Pin_14);
-
-    //EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
+    EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
     uint16_t ctrl = (uint16_t)GPIOB->INDR;
-
+    // recheck the strobes incase of glitches
     if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
+    ctrl = (uint16_t)GPIOB->INDR;
 
+    // get the address from the ports 
     uint32_t addr  = ((uint32_t)(ctrl & 0x003Fu) << 16) | (uint16_t)GPIOE->INDR;
-    uint16_t memory_value = ((ctrl & REG_MASK) == 0) ? PCMCIA_Reg_Read(addr) : PCMCIA_Memory_Read(addr);
+    uint16_t memory_value = ((ctrl & REG_MASK) == 0) ? PCMCIA_Reg_Read(addr) : PCMCIA_ROM_Read(addr);
     GPIOD->OUTDR = BUS16(memory_value);
 
     if (((ctrl & REG_MASK) == 0) && (addr < K.IoBase))
-    {
+    {   
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
-        GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
         goto exit;
     }
 
@@ -216,65 +228,71 @@ void PCMCIA_Handler(void) {
         // output enable set.
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
+
         if ((ctrl & REG_MASK) != 0)
         {
-            if (addr >= K.SpiRamBase)
+            if (addr < K.RomSize)
+            {
+                GPIOD->OUTDR = BUS16(PCMCIA_ROM_Read(addr));
+            }
+            else 
             {
                 GPIOD->OUTDR = BUS16(SPIRAM_Read16(addr & K.SpiRamMask));
             }
         }
-        GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
-        while ((GPIOB->INDR & OE_MASK) != OE_MASK) {}
-        GPIOD->CFGLR = K.BusOff;
-        GPIOD->CFGHR = K.BusOff;
+
+        DELAY_100NS();
     } 
     else if ((ctrl & WE_MASK) == 0)
-    {
-        if ((addr >= K.SpiRamBase) && (addr < K.SpiRamSize)) 
+    {   
+        GPIOD->CFGLR = K.BusOff;
+        GPIOD->CFGHR = K.BusOff;
+        DELAY_100NS();
+        
+        uint16_t data = BUS16((uint16_t)GPIOD->INDR);
+        
+        if ((ctrl & STROBE_MASK) == 0)
         {
-            uint16_t data = BUS16((uint16_t)GPIOD->INDR);
-            if ((ctrl & STROBE_MASK) == 0)
-            {
-                SPIRAM_Write16(addr, data);
-            }
-            else if ((ctrl & UDS_MASK) == 0)
-            {
-                SPIRAM_Write8(addr, (data >> 8));
-            }
-            else if ((ctrl & LDS_MASK) == 0)
-            {
-                SPIRAM_Write8(addr | 0x01, data & 0xFF);
-            }
-            GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);       
-            while ((GPIOB->INDR & WE_MASK) != WE_MASK) {} 
+            SPIRAM_Write16(addr, data);
+        }
+        else if ((ctrl & UDS_MASK) == 0)
+        {
+            SPIRAM_Write8(addr, (data >> 8));
+        }
+        else if ((ctrl & LDS_MASK) == 0)
+        {
+            SPIRAM_Write8(addr | 0x01, data & 0xFF);
         }
     }
     else if ((ctrl & K.IowMask) == 0)
     {
+        GPIOD->CFGLR = K.BusOff;
+        GPIOD->CFGHR = K.BusOff;
+        DELAY_100NS();
+
         if (addr >= K.IoRegBase)
         {
             // Write cycle: GPIOD stays floating; read data the Amiga is driving
             uint16_t data = BUS16((uint16_t)GPIOD->INDR);
             PCMCIA_IO_Write(addr, data);
-            //printf("IO Write: %08X = 0x%04X\n", addr, data);
-            GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
-            while ((GPIOB->INDR & K.IowMask) != K.IowMask) {}
         }
     }
     else if ((ctrl & K.IorMask) == 0)
     {
+        // output enable set.
+        GPIOD->CFGLR = K.BusOn;
+        GPIOD->CFGHR = K.BusOn;
+
         if (addr >= K.IoRegBase)
         {
             // output enable set.
             uint16_t val = PCMCIA_IO_Read(addr);
             GPIOD->OUTDR = BUS16(val);
             GPIOD->CFGLR = K.BusOn;
-            GPIOD->CFGHR = K.BusOn;
-            GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
-            while ((GPIOB->INDR & K.IorMask) != K.IorMask) {}
-            GPIOD->CFGLR = K.BusOff;
-            GPIOD->CFGHR = K.BusOff;
+            GPIOD->CFGHR = K.BusOn;    
         }
+
+        DELAY_100NS();
     }
 exit:
     GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
@@ -300,10 +318,10 @@ void PCMCIA_Init(void) {
     GPIO_SetBits(GPIOB, GPIO_Pin_14); // !WAIT
     GPIO_SetBits(GPIOA, GPIO_Pin_2); // READY
   
-    //NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-    //SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
-    //NVIC_SetPriority(EXTI9_5_IRQn, 0);
-    //NVIC_EnableIRQ(EXTI9_5_IRQn);
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
+    NVIC_SetPriority(EXTI9_5_IRQn, 0);
+    NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
 void RAMFUNC PCMCIA_PollLoop(void)

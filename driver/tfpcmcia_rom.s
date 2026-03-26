@@ -2,18 +2,18 @@
 ;
 ; Assembled with: vasmm68k_mot -Fbin -no-opt -o tfpcmcia.rom tfpcmcia_rom.s
 ;
-; This ROM is exposed through attribute memory at $A00200 (offset $100).
+; This ROM is exposed through attribute memory at $600200 (offset $100).
 ; The board presents two CIS configurations, switched via BOARD_CTRL:
 ;
 ; DIAG phase (cold boot, BOARD_CTRL=0):
 ;   Coldstart finds CISTPL_AMIGAXIP with flag=$23 (DIAG mode), reads a
-;   4-byte offset ($400200), and JMPs to $600000+offset = $A00200.
+;   4-byte offset ($400200), and JMPs to $600000+offset = $600200.
 ;   The DIAG entry (BRA.W) jumps to DiagHandler which writes BOARD_CTRL
 ;   to switch CIS from DIAG to XIP, then returns via JMP (A5).
 ;
 ; XIP phase (after card.resource init, BOARD_CTRL=1):
 ;   IfAmigaXIP() finds CISTPL_AMIGAXIP with TP_XIPLOC=$400204 and
-;   TP_XIPFLAGS=$01 (AUTORUN). This points to the RomTag at $A00204.
+;   TP_XIPFLAGS=$01 (AUTORUN). This points to the RomTag at $600204.
 ;   strap/boot calls InitResident() with A6=ExecBase, D0=0.
 ;
 ; Because the code runs from attribute memory (not common memory),
@@ -26,7 +26,7 @@
 ;   3. Scans the loaded code for a RomTag
 ;   4. Calls InitResident() to register the device driver
 
-BASE		equ	$A00200
+BASE		equ	$600000
 
 ; PCMCIA I/O space registers
 BOARD_CTRL_IO	equ	$A20206	; BOARD_CTRL register (I/O offset $103 * 2)
@@ -74,18 +74,18 @@ MAX_HUNKS	equ	8
 ; with flag=0x23. A5 holds the return address (cs_skipCart).
 ;---------------------------------------------------------------------------
 DiagEntry:
-	ifne	DiagEntry-$A00200
-	fail	"DiagEntry must be at $A00200"
+	ifne	DiagEntry-$600000
+	fail	"DiagEntry must be at $600000"
 	endc
 	bra.w	DiagHandler		; 4 bytes, skip to handler below
 
 ;---------------------------------------------------------------------------
-; RomTag (struct Resident) — at BASE+4 ($A00204)
+; RomTag (struct Resident) — at BASE+4 ($600004)
 ; XIP CIS TP_XIPLOC points here for IfAmigaXIP() → InitResident()
 ;---------------------------------------------------------------------------
 RomTag:
-	ifne	RomTag-$A00204
-	fail	"RomTag must be at $A00204"
+	ifne	RomTag-$600004
+	fail	"RomTag must be at $600004"
 	endc
 	dc.w	RTC_MATCHWORD		; rt_MatchWord
 	dc.l	RomTag			; rt_MatchTag
@@ -443,7 +443,7 @@ DiagHandler:
 	; samples the CD pins. Toggling the PCMCIA disable bit (bit 0) forces
 	; Gayle to re-sample, ensuring card.resource sees the card.
 	; card.resource 40.x (KS 3.1) does this itself; 37.11 does not.
-	move.b	#$01,GAYLE_STATUS	; disable PCMCIA interface (set bit 0)
+	;move.b	#$01,GAYLE_STATUS	; disable PCMCIA interface (set bit 0)
 	move.b	#$00,GAYLE_STATUS	; re-enable → Gayle re-samples CD lines
 	move.b	#$BC,GAYLE_CHANGE	; clear CC_DET change flag (bit 6) to prevent
 					; OwnCard's $FE write from triggering Gayle reset
