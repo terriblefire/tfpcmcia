@@ -117,10 +117,13 @@ static uint8_t cis_data[] = {
 #define REG_SPI_STATUS  0x204u
 #define REG_BOARD_CTRL  0x206u
 #define REG_BOARD_ID    0x208u
+#define REG_LED_FB_BASE 0x220u   /* 0xA20220 → byte_offset 0x0220 */
 
 #define BOARD_ID_VALUE  0x01u
 
-static uint8_t pcmica_board_ctrl = 0; 
+static uint8_t pcmica_board_ctrl = 0;
+
+uint32_t led_fb[7];               /* RGBX pixels; host writes via IO writes */
 
 static __attribute__((always_inline)) uint16_t PCMCIA_ROM_Read(uint32_t addr) {
     uint32_t offset = addr & K.RomMask;  /* word-align within 128KB ROM */
@@ -159,6 +162,21 @@ static __attribute__((always_inline)) uint16_t PCMCIA_IO_Read(uint32_t addr) {
 static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16_t data) {
     uint32_t byte_offset = addr & 0xFFFFu;
     uint8_t b = (uint8_t)(data >> 8);  /* driver byte is on upper lane */
+
+    if (byte_offset >= REG_LED_FB_BASE && byte_offset < REG_LED_FB_BASE + 28u) {
+        /* Each pixel = 4 bytes, accessed as two consecutive 16-bit writes.
+         * word_idx 0,1 = pixel 0 (R,G then B,X); 2,3 = pixel 1; etc. */
+        uint8_t word_idx = (uint8_t)((byte_offset - REG_LED_FB_BASE) >> 1); /* 0..13 */
+        uint8_t pix_idx  = word_idx >> 1;                                    /* 0..6  */
+        if ((word_idx & 1u) == 0u) {
+            /* high word: data[15:8]=R, data[7:0]=G */
+            led_fb[pix_idx] = (led_fb[pix_idx] & 0x0000FFFFu) | ((uint32_t)data << 16);
+        } else {
+            /* low word: data[15:8]=B, data[7:0]=X */
+            led_fb[pix_idx] = (led_fb[pix_idx] & 0xFFFF0000u) | (uint32_t)data;
+        }
+        return;
+    }
 
     switch (byte_offset) {
         case REG_BOARD_CTRL: 
@@ -282,6 +300,8 @@ void PCMCIA_Handler(void) {
 exit:
     GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
 }
+
+uint8_t PCMCIA_BoardCtrl(void) { return pcmica_board_ctrl; }
 
 /* ---- Init --------------------------------------------------------------- */
 

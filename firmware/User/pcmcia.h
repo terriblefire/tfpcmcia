@@ -27,6 +27,9 @@ extern volatile uint32_t pcmcia_irq_count;
 extern volatile uint32_t pcmcia_mem_count;
 extern volatile uint32_t pcmcia_io_count;
 
+extern uint32_t led_fb[7];
+uint8_t PCMCIA_BoardCtrl(void);
+
 void PCMCIA_Init(void);
 void PCMCIA_Handler(void);
 void PCMCIA_PollLoop(void);

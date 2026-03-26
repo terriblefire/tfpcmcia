@@ -1,5 +1,6 @@
 #include "debug.h"
 #include "gpio.h"
+#include "led.h"
 #include "pcmcia.h"
 
 
@@ -28,9 +29,14 @@ int main(void) {
     uint16_t ctrl;
 
 
+    uint16_t frame = 0;
     while (1)
     {
-        Delay_Ms(10);
+        if (PCMCIA_BoardCtrl() & 1)
+            APA102_FB(led_fb);
+        else
+            APA102_Kitt(frame++);
+        Delay_Ms(1);
     }
 
     //PCMCIA_PollLoop();
