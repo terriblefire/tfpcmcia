@@ -5,7 +5,7 @@
 /* Forward declaration — callers pass db->db_SysBase; spi.c ignores it for now */
 struct ExecBase;
 
-// PCMCIA I/O space registers (even byte addresses)
+// PCMCIA attribute memory registers (even byte addresses)
 #define SPI_DATA   (*(volatile UBYTE*)0xA20200)
 #define SPI_CS     (*(volatile UBYTE*)0xA20202)
 #define SPI_STATUS (*(volatile UBYTE*)0xA20204)

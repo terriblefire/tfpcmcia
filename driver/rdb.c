@@ -323,13 +323,12 @@ void MountUnit(struct DevBase* db)
                     struct FileSysStartupMsg* fssm = (struct FileSysStartupMsg*)BADDR(dn->dn_Startup);
                     struct DosEnvec* env = (struct DosEnvec*)BADDR(fssm->fssm_Environ);
                     bootPri = env->de_BootPri;
-                    // Boost priority so tfpcmcia partitions always boot
-                    // before internal drives (IDE pri ~0, DF0 pri 5).
-                    // Preserve relative ordering between our partitions.
-                    LONG boosted = (LONG)bootPri + 64;
-                    if (boosted > 127)
-                        boosted = 127;
-                    bootPri = (BYTE)boosted;
+                    // We bypass the strap and call InitResident("dos.library")
+                    // directly.  DOS picks the highest-priority bootable entry
+                    // as the boot volume.  DF0 has priority 5, so we need at
+                    // least 6 to boot from our partition instead of the floppy.
+                    if (bootPri < 6)
+                        bootPri = 6;
                     kprintf("  PART: bootable, pri=%ld\n", (LONG)bootPri);
                 }
 
