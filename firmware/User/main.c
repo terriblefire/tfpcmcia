@@ -26,16 +26,24 @@ int main(void) {
     printf("Testing sdcard\r\n");
 
     LED2_GPIO_Port->OUTDR ^= LED2_Pin;
-    uint16_t ctrl;
-
 
     uint16_t frame = 0;
+    uint16_t last_ctrl = 0xFFFF;
     while (1)
     {
-        if (PCMCIA_BoardCtrl() & 1)
-            APA102_FB(led_fb);
-        else
-            APA102_Kitt(frame++);
+        uint16_t ctrl = PCMCIA_BoardCtrl();
+        if (ctrl != last_ctrl) {
+            frame = 0;
+            last_ctrl = ctrl;
+        }
+        switch (ctrl) {
+            case 0:  APA102_GreenRamp(frame); break;
+            case 1:  APA102_Kitt(frame);      break;
+            case 2:  break;                   /* unused */
+            case 3:  APA102_FB(led_fb);       break;
+            default: break;
+        }
+        frame++;
         Delay_Ms(1);
     }
 

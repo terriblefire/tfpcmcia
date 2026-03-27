@@ -101,11 +101,13 @@ void GPIO_Config(void) {
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-    /* LEDx: output push-pull */
-    GPIO_InitStructure.GPIO_Pin = LED1_Pin | LED2_Pin;
+    /* LEDx + APA102 CLK/DATA: output push-pull */
+    GPIO_InitStructure.GPIO_Pin = LED1_Pin | LED2_Pin | LED_CLK_Pin | LED_DO_Pin;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
+    /* CLK and DATA idle low */
+    GPIOC->BCR = LED_CLK_Pin | LED_DO_Pin;
 
     /* EXTI6: PB6 (UDS/CE1), falling edge */
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource6);
@@ -118,6 +120,14 @@ void GPIO_Config(void) {
     /* EXTI9: PB9 (LDS/CE2), falling edge */
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource9);
     EXTI_InitStructure.EXTI_Line = EXTI_Line9;
+    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);
+
+    /* EXTI13: PB13 (RESET), falling edge */
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource13);
+    EXTI_InitStructure.EXTI_Line = EXTI_Line13;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;

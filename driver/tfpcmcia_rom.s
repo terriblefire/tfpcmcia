@@ -23,10 +23,10 @@ SERPER		equ	$DFF032
 SERDATR		equ	$DFF018
 
 ; PCMCIA board registers (attribute memory, even byte addresses)
-SPI_DATA	equ	$A00200
-SPI_CS		equ	$A00202
-SPI_STATUS	equ	$A00204
-BOARD_CTRL	equ	$A00206
+SPI_DATA	equ	$A20200
+SPI_CS		equ	$A20202
+SPI_STATUS	equ	$A20204
+BOARD_CTRL	equ	$A20206
 
 ; Serial constants
 SERPER_9600	equ	$0173		; 9600 baud for PAL (3546895 / 9600 - 1)
@@ -91,6 +91,9 @@ Init:
 
 	; set serial baud rate
 	move.w	#SERPER_9600,SERPER
+
+	; reset the LED to default. 
+	move.b  #0,BOARD_CTRL
 
 	; print "TF\n"
 	lea	str_tf(pc),a0
@@ -372,7 +375,7 @@ Init:
 	; This code is copied to RAM and executed from there.
 	; No PC-relative references allowed — only absolute addresses.
 .trampoline:
-	move.b	#$01,BOARD_CTRL		; switch to SPIRAM
+	
 	adda.w	#(.trampEnd-.trampoline),sp	; skip past trampoline on stack
 	movem.l	(sp)+,d2-d7/a2-a6
 	moveq	#0,d0

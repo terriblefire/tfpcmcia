@@ -32,6 +32,7 @@ uint8_t PCMCIA_BoardCtrl(void);
 
 void PCMCIA_Init(void);
 void PCMCIA_Handler(void);
+void PCMCIA_ResetHandler(void);
 void PCMCIA_PollLoop(void);
 
 

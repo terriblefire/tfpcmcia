@@ -186,7 +186,6 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
             sd_xfer(b);
             break;
         case REG_SPI_CS:
-            pcmica_board_ctrl = 0;
             b &= 0x01;
             if (b == 0x00u) SD_CS_LOW() else SD_CS_HIGH();
             break;
@@ -301,6 +300,21 @@ exit:
     GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
 }
 
+void PCMCIA_ResetHandler(void) __attribute__((interrupt, section(".ramtext")));
+
+void PCMCIA_ResetHandler(void) {
+    EXTI->INTFR = EXTI_Line13;
+
+    pcmica_board_ctrl = 0;
+    SD_CS_HIGH();
+}
+
+void EXTI15_10_IRQHandler(void) __attribute__((interrupt));
+
+void EXTI15_10_IRQHandler(void) {
+    PCMCIA_ResetHandler();
+}
+
 uint8_t PCMCIA_BoardCtrl(void) { return pcmica_board_ctrl; }
 
 /* ---- Init --------------------------------------------------------------- */
@@ -327,6 +341,9 @@ void PCMCIA_Init(void) {
     SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
     NVIC_SetPriority(EXTI9_5_IRQn, 0);
     NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+    NVIC_SetPriority(EXTI15_10_IRQn, 0x40);  /* preemption 1 — lower than PCMCIA_Handler (0) */
+    NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 void RAMFUNC PCMCIA_PollLoop(void)

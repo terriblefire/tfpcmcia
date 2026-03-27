@@ -21,6 +21,22 @@ static void send_u32(uint32_t v)
     send_byte(v >> 8);  send_byte(v);
 }
 
+#define RAMP_FRAMES 4096u
+
+void APA102_GreenRamp(uint16_t frame)
+{
+    uint8_t g = (frame >= RAMP_FRAMES) ? 0xFFu : (uint8_t)(frame * 255u / RAMP_FRAMES);
+
+    send_u32(0x00000000);               /* start frame */
+    for (int i = 0; i < 7; i++) {
+        send_byte(0xFF);                /* global brightness = max */
+        send_byte(0x00);                /* blue  */
+        send_byte(g);                   /* green */
+        send_byte(0x00);                /* red   */
+    }
+    send_u32(0xFFFFFFFF);               /* end frame */
+}
+
 #define KITT_NUM_LEDS  7
 #define KITT_FRAMES    1024
 #define KITT_STEPS     12   /* 2*(NUM_LEDS-1) */

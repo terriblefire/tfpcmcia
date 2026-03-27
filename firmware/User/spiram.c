@@ -7,13 +7,13 @@ void SPIRAM_Init(void) {
     /* SPI1 + GPIO configured by GPIO_Config() / GPIO_Spi_Init() */
 
     /* Reset sequence: RST_EN then RST */
-    SPIRAM_CS_LOW();
+    /*SPIRAM_CS_LOW();
     spiram_xfer(APS_CMD_RSTEN);
     SPIRAM_CS_HIGH();
 
     SPIRAM_CS_LOW();
     spiram_xfer(APS_CMD_RST);
-    SPIRAM_CS_HIGH();
+    SPIRAM_CS_HIGH();*/
 }
 
 void SPIRAM_Test(void) {

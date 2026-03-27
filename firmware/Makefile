@@ -26,6 +26,7 @@ LDFLAGS = $(MCU_FLAGS) \
 
 SRCS  = User/main.c \
         User/gpio.c \
+        User/led.c \
         User/pcmcia.c \
         User/debug.c \
         User/ch32v30x_it.c \
