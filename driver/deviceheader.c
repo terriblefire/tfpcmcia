@@ -1,7 +1,10 @@
 #include <proto/exec.h>
+#include <proto/expansion.h>
 #include <exec/resident.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
+#include <libraries/expansionbase.h>
+#include <dos/filehandler.h>
 
 #include "device.h"
 #include "spi.h"
@@ -178,6 +181,87 @@ static struct DevBase* Init(
     if (db->db_CardType != SD_TYPE_NONE)
     {
         MountUnit(db);
+
+        // Remove all non-tfpcmcia BootNodes from the MountList so DOS
+        // only sees our partitions (avoids IDE timeouts and conflicting mounts)
+        {
+            struct Library* expBase = OpenLibrary((CONST_STRPTR)"expansion.library", 0);
+            if (expBase)
+            {
+                struct ExpansionBase* eb = (struct ExpansionBase*)expBase;
+                struct BootNode* bn = (struct BootNode*)eb->MountList.lh_Head;
+                kprintf("MountList:\n");
+                while (bn->bn_Node.ln_Succ != NULL)
+                {
+                    struct BootNode* next = (struct BootNode*)bn->bn_Node.ln_Succ;
+
+                    // Get DOS device name from DeviceNode's dn_Name (BSTR)
+                    char dosName[32];
+                    dosName[0] = '?';
+                    dosName[1] = '\0';
+                    struct DeviceNode* dn = (struct DeviceNode*)bn->bn_DeviceNode;
+                    if (dn && dn->dn_Name)
+                    {
+                        UBYTE* bstr = (UBYTE*)BADDR(dn->dn_Name);
+                        UBYTE len = bstr[0];
+                        if (len > sizeof(dosName) - 2)
+                            len = sizeof(dosName) - 2;
+                        for (UBYTE j = 0; j < len; j++)
+                            dosName[j] = bstr[j + 1];
+                        dosName[len] = ':';
+                        dosName[len + 1] = '\0';
+                    }
+
+                    // Check if this BootNode belongs to us by matching the
+                    // device driver name in FileSysStartupMsg
+                    int ours = 0;
+                    if (dn && dn->dn_Startup)
+                    {
+                        struct FileSysStartupMsg* fssm =
+                            (struct FileSysStartupMsg*)BADDR(dn->dn_Startup);
+                        if (fssm && fssm->fssm_Device)
+                        {
+                            UBYTE* devBstr = (UBYTE*)BADDR(fssm->fssm_Device);
+                            UBYTE devLen = devBstr[0];
+                            kprintf("    fssm=%08lx dev=%08lx len=%ld '",
+                                (ULONG)fssm, (ULONG)BADDR(fssm->fssm_Device), (ULONG)devLen);
+                            for (UBYTE j = 0; j < devLen && j < 30; j++)
+                                kprintf("%lc", (ULONG)devBstr[j + 1]);
+                            kprintf("'\n");
+                            // Compare with "tfpcmcia.device"
+                            // BSTR length may include trailing null
+                            UBYTE cmpLen = sizeof(DeviceName) - 1;
+                            if (devLen == cmpLen || devLen == cmpLen + 1)
+                            {
+                                int match = 1;
+                                for (UBYTE j = 0; j < cmpLen; j++)
+                                {
+                                    if (devBstr[j + 1] != DeviceName[j])
+                                    {
+                                        match = 0;
+                                        break;
+                                    }
+                                }
+                                ours = match;
+                            }
+                        }
+                    }
+
+                    if (ours)
+                    {
+                        kprintf("  keep %s\n", dosName);
+                    }
+                    else
+                    {
+                        kprintf("  remove %s\n", dosName);
+                        Remove((struct Node*)bn);
+                    }
+
+                    bn = next;
+                }
+                CloseLibrary(expBase);
+            }
+        }
 
         // PCMCIA XIP runs after the strap module has already scanned the
         // MountList, so our BootNodes will never be picked up by the strap's
