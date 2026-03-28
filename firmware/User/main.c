@@ -31,7 +31,7 @@ int main(void) {
     uint16_t last_ctrl = 0xFFFF;
     while (1)
     {
-        uint16_t ctrl = PCMCIA_BoardCtrl();
+        uint16_t ctrl = PCMCIA_BoardCtrl() & 0x03;
         if (ctrl != last_ctrl) {
             frame = 0;
             last_ctrl = ctrl;

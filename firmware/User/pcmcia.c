@@ -21,6 +21,10 @@
     __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
+#define DELAY_240NS() do { \
+    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
+} while (0)
+
 typedef struct {
     /* GPIO port D configuration words */
     uint32_t BusOn;      /* 0x33333333 — CFGLR/CFGHR: output 50 MHz push-pull */
@@ -73,11 +77,11 @@ static uint8_t sd_rx_byte = 0xFF;
 
 static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
 
-    while (SPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_TXE) == RESET) {};
+    while (MYSPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_TXE) == RESET) {};
     SPI3->DATAR = data;
-    while (SPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_RXNE) == RESET) {};
+    while (MYSPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_RXNE) == RESET) {};
     sd_rx_byte = SPI3->DATAR;
-    while (SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_BSY) == SET) {};  // wait for shift register idle
+    while (MYSPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_BSY) == SET) {};  // wait for shift register idle
     return sd_rx_byte;
 }
 
@@ -203,27 +207,42 @@ void PCMCIA_Handler(void) {
     GPIO_SafeResetBits(GPIOB, GPIO_Pin_14);
     EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
+    /* Glitch filter: CE1/CE2 are pure address-decode outputs from Gayle.
+     * Any address-bus transition through the PCMCIA window fires a spurious
+     * edge.  Three reads ≈ 21 ns at 144 MHz confirm CE is stable.
+     * Use return (not goto exit) so /WAIT is never touched for fake cycles. */
     uint16_t ctrl = (uint16_t)GPIOB->INDR;
-    // recheck the strobes incase of glitches
     if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
-    ctrl = (uint16_t)GPIOB->INDR;
 
-    // get the address from the ports 
+    // get the address from the ports
     uint32_t addr  = ((uint32_t)(ctrl & 0x003Fu) << 16) | (uint16_t)GPIOE->INDR;
-    uint16_t memory_value = ((ctrl & REG_MASK) == 0) ? PCMCIA_Reg_Read(addr) : PCMCIA_ROM_Read(addr);
+    // read the XIP registers - this also adds a small delay which helps filter out glitches.
+    uint16_t memory_value = PCMCIA_Reg_Read(addr);
     GPIOD->OUTDR = BUS16(memory_value);
+    
+    EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
+    // recheck the control lines to see if they are still active, if not, this was a glitch and we should exit immediately without touching /WAIT
+    ctrl = (uint16_t)GPIOB->INDR;
+    if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
+
+    // reg cycles can just bail and stay on the bus now. they cannot wait. 
     if (((ctrl & REG_MASK) == 0) && (addr < K.IoBase))
-    {   
+    {
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
         goto exit;
     }
 
-    do 
-    {
+    /* Wait for OE/WE/IOR/IOW with a ~250 ns timeout.
+     * A real write cycle has WE ≤ 250 ns after CE (≈ 10–11 iterations).
+     * A fake CE (address-bus glitch) never produces an access signal;
+     * without the timeout the CH32 would hang until its watchdog fires. */
+    uint32_t spin = 32u;
+    do {
         ctrl = (uint16_t)GPIOB->INDR;
-    } while ((ctrl & K.AccessMask) == K.AccessMask);
+    } while ((ctrl & K.AccessMask) == K.AccessMask && --spin);
+    if (!spin) goto exit;
     
     if ((ctrl & OE_MASK) == 0) 
     {
@@ -249,10 +268,16 @@ void PCMCIA_Handler(void) {
     {   
         GPIOD->CFGLR = K.BusOff;
         GPIOD->CFGHR = K.BusOff;
+        
         DELAY_100NS();
+        DELAY_100NS();
+        //DELAY_100NS();
         
         uint16_t data = BUS16((uint16_t)GPIOD->INDR);
         
+        GPIOD->CFGLR = K.BusOn;
+        GPIOD->CFGHR = K.BusOn;
+
         if ((ctrl & STROBE_MASK) == 0)
         {
             SPIRAM_Write16(addr, data);

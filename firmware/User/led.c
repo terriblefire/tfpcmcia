@@ -25,6 +25,8 @@ static void send_u32(uint32_t v)
 
 void APA102_GreenRamp(uint16_t frame)
 {
+    frame %= (2 * RAMP_FRAMES);
+    frame = (frame >= RAMP_FRAMES) ? (2 * RAMP_FRAMES - frame) : frame;
     uint8_t g = (frame >= RAMP_FRAMES) ? 0xFFu : (uint8_t)(frame * 255u / RAMP_FRAMES);
 
     send_u32(0x00000000);               /* start frame */

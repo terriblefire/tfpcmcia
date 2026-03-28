@@ -101,6 +101,8 @@ Init:
 
 	bsr SimonTopDog
 
+	move.b  #1,BOARD_CTRL
+
 	;-------------------------------------------------------------------
 	; Load embedded tfpcmcia.device from ROM into Amiga RAM
 	;-------------------------------------------------------------------
