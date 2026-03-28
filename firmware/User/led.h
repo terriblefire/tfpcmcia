@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+void APA102_AmberBlink(uint16_t frame);
 void APA102_White(uint16_t num_leds);
 void APA102_GreenRamp(uint16_t frame);
 void APA102_Kitt(uint16_t frame);

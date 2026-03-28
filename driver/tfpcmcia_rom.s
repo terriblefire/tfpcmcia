@@ -99,6 +99,8 @@ Init:
 	lea	str_tf(pc),a0
 	bsr	ser_puts
 
+	move.b  #2,BOARD_CTRL
+
 	bsr SimonTopDog
 
 	move.b  #1,BOARD_CTRL

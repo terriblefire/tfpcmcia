@@ -13,6 +13,7 @@ static void send_byte(uint8_t b)
         CLK_H();
         CLK_L();
     }
+    Delay_Us(1);
 }
 
 static void send_u32(uint32_t v)
@@ -82,6 +83,21 @@ void APA102_FB(const uint32_t *pixels)
         send_byte(b);
         send_byte(g);
         send_byte(r);
+    }
+    send_u32(0xFFFFFFFF);               /* end frame */
+}
+
+void APA102_AmberBlink(uint16_t frame)
+{
+    uint8_t on = (frame % 600u) < 300u;
+
+    send_u32(0x00000000);               /* start frame */
+    for (int i = 0; i < 7; i++) {
+        send_byte(0xFF);                /* global brightness = max */
+        send_byte(0x00);                /* blue  */
+        uint8_t lit = (on ? i < 4 : i >= 4);
+        send_byte(lit ? 0x80 : 0x00);             /* green */
+        send_byte(lit ? 0xFF : 0x00);             /* red   */
     }
     send_u32(0xFFFFFFFF);               /* end frame */
 }
