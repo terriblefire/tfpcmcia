@@ -21,8 +21,8 @@
     __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
-#define DELAY_240NS() do { \
-    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
+#define DELAY_140NS() do { \
+    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
 typedef struct {
@@ -268,13 +268,8 @@ void PCMCIA_Handler(void) {
     {   
         GPIOD->CFGLR = K.BusOff;
         GPIOD->CFGHR = K.BusOff;
-        
-        DELAY_100NS();
-        DELAY_100NS();
-        //DELAY_100NS();
-        
+        DELAY_140NS();
         uint16_t data = BUS16((uint16_t)GPIOD->INDR);
-        
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
 
@@ -295,12 +290,14 @@ void PCMCIA_Handler(void) {
     {
         GPIOD->CFGLR = K.BusOff;
         GPIOD->CFGHR = K.BusOff;
-        DELAY_100NS();
+        DELAY_140NS();
+        uint16_t data = BUS16((uint16_t)GPIOD->INDR);
+        GPIOD->CFGLR = K.BusOn;
+        GPIOD->CFGHR = K.BusOn;
 
         if (addr >= K.IoRegBase)
         {
-            // Write cycle: GPIOD stays floating; read data the Amiga is driving
-            uint16_t data = BUS16((uint16_t)GPIOD->INDR);
+            // Write cycle: GPIOD stays floating; read data the Amiga is driving    
             PCMCIA_IO_Write(addr, data);
         }
     }
