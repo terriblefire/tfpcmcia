@@ -15,4 +15,4 @@ flash:
 	minichlink -w firmware/tfpcmcia.bin flash -b
 
 docker-image:
-	$(DOCKER) build -q -t $(IMAGE) . --platform linux/amd64
+#	$(DOCKER) build -q -t $(IMAGE) . --platform linux/amd64
