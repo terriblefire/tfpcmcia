@@ -1,4 +1,4 @@
-IMAGE = tfpcmcia
+IMAGE = terriblefire78/mrs:latest
 DOCKER = PATH="/Applications/Docker.app/Contents/Resources/bin:$$PATH" docker
 
 .PHONY: all clean flash docker-image
