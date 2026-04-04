@@ -50,6 +50,7 @@ HUNK_END	equ	$3F2
 _LVOAllocMem	equ	-198
 _LVOInitResident equ	-102
 _LVOCacheClearU	equ	-636
+_LVOCacheControl equ	-648
 
 ; Memory flags
 MEMF_PUBLIC	equ	$0001
@@ -102,6 +103,12 @@ Init:
 	move.b  #2,BOARD_CTRL
 
 	bsr SimonTopDog
+
+	; Disable all CPU caches
+	moveq	#0,d0			; cacheBits = 0 (all off)
+	move.l	#$FFFFFFFF,d1		; cacheMask = all bits
+	move.l	a5,a6
+	jsr	_LVOCacheControl(a6)
 
 	move.b  #1,BOARD_CTRL
 
@@ -398,7 +405,7 @@ read_long:
 ;---------------------------------------------------------------------------
 ; Strings
 ;---------------------------------------------------------------------------
-str_tf:		dc.b	"TF TopDOG!",$0A,0
+str_tf:		dc.b	"TF TopDOG wtf!",$0A,0
 str_badhunk:	dc.b	"bad hunk",$0A,0
 str_nort:	dc.b	"no RT",$0A,0
 str_nomem:	dc.b	"no mem",$0A,0

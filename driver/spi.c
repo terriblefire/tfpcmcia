@@ -26,7 +26,10 @@ static void WaitMs(ULONG ms)
 {
     ULONG bytes = ms * 150;   /* 150 SpiByte calls ≈ 1 ms */
     while (bytes--)
+    {
+        __asm__ volatile("tst.b 0xbfe001");
         SpiByte(0xFF);
+    }
 }
 
 /*
@@ -40,7 +43,8 @@ static void WaitMs(ULONG ms)
 typedef ULONG Timeout;
 
 static Timeout TimeoutNew(ULONG iters) { return iters; }
-static BOOL    TimeoutDone(Timeout* t) { return *t == 0 ? TRUE : ((*t)--, FALSE); }
+static BOOL    TimeoutDone(Timeout* t) { __asm__ volatile("tst.b 0xbfe001");
+                                        return *t == 0 ? TRUE : ((*t)--, FALSE); }
 
 /* ---- SPI primitives ----------------------------------------------------- */
 
