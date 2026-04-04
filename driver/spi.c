@@ -47,6 +47,7 @@ static BOOL    TimeoutDone(Timeout* t) { return *t == 0 ? TRUE : ((*t)--, FALSE)
 UBYTE SpiByte(UBYTE data)
 {
     SPI_DATA = data;
+    __asm__ volatile("nop");
     return SPI_DATA;
 }
 
