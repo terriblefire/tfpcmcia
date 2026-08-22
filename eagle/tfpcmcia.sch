@@ -12217,6 +12217,8 @@ Basic 0.1" spaced jumper. Use with breakaway headers.</description>
 <part name="C14" library="eagle-ltspice" deviceset="C" device="C0603" value="2.2uF"/>
 <part name="C15" library="eagle-ltspice" deviceset="C" device="C0603" value="2.2uF"/>
 <part name="C16" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="22uF"/>
+<part name="C17" library="eagle-ltspice" deviceset="C" device="C0603" value="100nF"/>
+<part name="C18" library="eagle-ltspice" deviceset="C" device="C0603" value="100nF"/>
 </parts>
 <sheets>
 <sheet>
@@ -12393,6 +12395,14 @@ Basic 0.1" spaced jumper. Use with breakaway headers.</description>
 <attribute name="NAME" x="301.244" y="96.901" size="1.778" layer="95"/>
 <attribute name="VALUE" x="301.244" y="91.821" size="1.778" layer="96"/>
 </instance>
+<instance part="C17" gate="G$1" x="307.34" y="142.24" smashed="yes">
+<attribute name="NAME" x="308.864" y="142.621" size="1.778" layer="95"/>
+<attribute name="VALUE" x="308.864" y="137.541" size="1.778" layer="96"/>
+</instance>
+<instance part="C18" gate="G$1" x="236.22" y="142.24" smashed="yes">
+<attribute name="NAME" x="237.744" y="142.621" size="1.778" layer="95"/>
+<attribute name="VALUE" x="237.744" y="137.541" size="1.778" layer="96"/>
+</instance>
 </instances>
 <busses>
 <bus name="A[0..31],BVD[1..2],CD[1..2],CE[1..2],D[0..15],GND,IORD,IOWR,LED[1..3],LED_CLK,LED_DO,NRST,OE,RAM_CLK,RAM_MISO,RAM_MOSI,RAM_SNSS,READY,!REG,RESET,SD_CD,SD_CLK,SD_MISO,SD_MOSI,SD_SNSS,SWCLK,SWDIO,USART_RX,USART_TX,VCC,VCC33,!VS[1..2],!WAIT,!WE,WP/!IOCS16">
@@ -12532,6 +12542,9 @@ Basic 0.1" spaced jumper. Use with breakaway headers.</description>
 <wire x1="297.18" y1="127" x2="307.34" y2="127" width="0.1524" layer="91"/>
 <wire x1="307.34" y1="127" x2="307.34" y2="137.16" width="0.1524" layer="91"/>
 <junction x="297.18" y="127"/>
+<pinref part="C17" gate="G$1" pin="2"/>
+<pinref part="C18" gate="G$1" pin="2"/>
+<wire x1="236.22" y1="137.16" x2="236.22" y2="127" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="LED3" gate="G$1" pin="GND"/>
@@ -13407,6 +13420,9 @@ Basic 0.1" spaced jumper. Use with breakaway headers.</description>
 <wire x1="297.18" y1="152.4" x2="307.34" y2="152.4" width="0.1524" layer="91"/>
 <wire x1="307.34" y1="152.4" x2="307.34" y2="144.78" width="0.1524" layer="91"/>
 <junction x="297.18" y="152.4"/>
+<pinref part="C17" gate="G$1" pin="1"/>
+<pinref part="C18" gate="G$1" pin="1"/>
+<wire x1="236.22" y1="152.4" x2="236.22" y2="144.78" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="R3" gate="G$1" pin="1"/>
