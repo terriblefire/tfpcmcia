@@ -12181,8 +12181,8 @@ Basic 0.1" spaced jumper. Use with breakaway headers.</description>
 <part name="SUPPLY6" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="VDD" device=""/>
 <part name="SUPPLY2" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="VCC" device=""/>
 <part name="C2" library="eagle-ltspice" deviceset="C" device="C0603" value="10uF"/>
-<part name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="100nF"/>
-<part name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="1uF"/>
+<part name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="1uF"/>
+<part name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="10uF"/>
 <part name="PWR" library="led" library_urn="urn:adsk.eagle:library:259" deviceset="LED" device="SML0805" package3d_urn="urn:adsk.eagle:package:15830/1" value="LED"/>
 <part name="R1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="2K2"/>
 <part name="DEBUG" library="microbuilder" deviceset="HEADER-1X6" device="ROUND" value="JTAG"/>
@@ -12647,6 +12647,11 @@ Basic 0.1" spaced jumper. Use with breakaway headers.</description>
 <wire x1="86.36" y1="2.54" x2="86.36" y2="-2.54" width="0.1524" layer="91"/>
 <label x="88.9" y="0" size="1.778" layer="95"/>
 <pinref part="C14" gate="G$1" pin="2"/>
+</segment>
+<segment>
+<pinref part="IC1" gate="G$1" pin="PB2-BOOT1"/>
+<wire x1="132.08" y1="22.86" x2="132.08" y2="-2.54" width="0.1524" layer="91"/>
+<label x="132.08" y="10.16" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="D3" class="0">
