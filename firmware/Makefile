@@ -13,7 +13,7 @@ MCU_FLAGS = -march=rv32imafc -mabi=ilp32 -msmall-data-limit=8
 CFLAGS  = $(MCU_FLAGS) -Ofast -std=gnu99 \
           -ffunction-sections -fdata-sections \
           -Wall -Wno-unused-function \
-          -DUSE_STDPERIPH_DRIVER -DCH32V30x_D8C \
+          -DUSE_STDPERIPH_DRIVER \
           -I User -I Core -I Peripheral/inc
 
 LDFLAGS = $(MCU_FLAGS) \
@@ -26,21 +26,23 @@ LDFLAGS = $(MCU_FLAGS) \
 
 SRCS  = User/main.c \
         User/gpio.c \
+        User/psram.c \
         User/led.c \
         User/pcmcia.c \
         User/debug.c \
-        User/ch32v30x_it.c \
+        User/ch32v4x7_it.c \
+        User/psram_wch.c \
         Core/core_riscv.c \
-        Core/system_ch32v30x.c \
-        Peripheral/src/ch32v30x_gpio.c \
-        Peripheral/src/ch32v30x_rcc.c \
-        Peripheral/src/ch32v30x_exti.c \
-        Peripheral/src/ch32v30x_usart.c \
-        Peripheral/src/ch32v30x_misc.c \
-        Peripheral/src/ch32v30x_dbgmcu.c \
-        Peripheral/src/ch32v30x_spi.c
+        Core/system_ch32v4x7.c \
+        Peripheral/src/ch32v4x7_gpio.c \
+        Peripheral/src/ch32v4x7_rcc.c \
+        Peripheral/src/ch32v4x7_exti.c \
+        Peripheral/src/ch32v4x7_usart.c \
+        Peripheral/src/ch32v4x7_dbgmcu.c \
+        Peripheral/src/ch32v4x7_psram.c \
+        Peripheral/src/ch32v4x7_spi.c
 
-ASRCS = Startup/startup_ch32v30x_D8C.S \
+ASRCS = Startup/startup_ch32v4x7.S \
         User/boot_rom.S
 
 OBJS  = $(SRCS:.c=.o) $(ASRCS:.S=.o)

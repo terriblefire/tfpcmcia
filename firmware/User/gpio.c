@@ -6,9 +6,9 @@ static void GPIO_Spi_Init(SPI_TypeDef *spi, GPIO_TypeDef *gpio, uint16_t pins, u
     GPIO_InitTypeDef GPIO_InitStructure = {0};
     SPI_InitTypeDef SPI_InitStructure = {0};
 
-    // SCK, MISO, MOSI pin configuration
+    // SCK, MOSI pin configuration
     GPIO_InitStructure.GPIO_Pin = pins;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
     GPIO_Init (gpio, &GPIO_InitStructure);
 
@@ -35,11 +35,14 @@ void GPIO_Config(void) {
     EXTI_InitTypeDef EXTI_InitStructure = {0};
 
     /* Enable clocks for all used GPIO ports and AFIO */
-    RCC->APB2PCENR |= RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
-                      RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
-                      RCC_APB2Periph_GPIOE | RCC_APB2Periph_AFIO;
+    RCC->PB2PCENR |= RCC_PB2Periph_GPIOA | RCC_PB2Periph_GPIOB |
+                     RCC_PB2Periph_GPIOC | RCC_PB2Periph_GPIOD |
+                     RCC_PB2Periph_GPIOE | RCC_PB2Periph_AFIO;
 
-    /* Address bus A0-A15 on GPIOE: input floating */
+    /* Address low/mid A0-A6, A8-A11 on GPIOE: input floating.
+     * PE7/PE13-PE15 are not bonded on the CH32V467VET6 (harmless to
+     * configure); PE12 is BOOT0 with an external pull-down — floating
+     * input is its reset state, leave it be. */
     GPIOE->CFGLR = 0x44444444;
     GPIOE->CFGHR = 0x44444444;
 
@@ -47,111 +50,114 @@ void GPIO_Config(void) {
     GPIOD->CFGLR = 0x44444444;
     GPIOD->CFGHR = 0x44444444;
 
-    /* PB0-PB5 (A16-A21): input floating */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 |
-                                  GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5;
+    /* Address high A12-A19 on PB8-PB15: input floating */
+    GPIOB->CFGHR = 0x44444444;
+
+    /* PB3 (A7), PB4 (A20), PB5 (A21): input floating.
+     * PB2 is BOOT1, strapped to GND on the board — leave it an input,
+     * never drive it. */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-    /* PB6 (CE1/UDS), PB7 (OE), PB8 (WE), PB9 (CE2/LDS),
-       PB10 (REG), PB11 (IOR), PB12 (IOW), PB13 (RESET): input pull-up */
+    /* PC6 (CE1), PC7 (OE), PC8 (WE), PC9 (CE2),
+       PC10 (REG), PC11 (IOR), PC12 (IOW): input pull-up */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 |
                                   GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 |
-                                  GPIO_Pin_12 | GPIO_Pin_13;
+                                  GPIO_Pin_12;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-    /* PB14 (WAIT): output push-pull, drive HIGH (no wait states) */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-    GPIOB->BSHR = GPIO_Pin_14;   /* WAIT = HIGH */
-
-    /* PB15 (IOIS16): output push-pull (LOW = 16-bit port) */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-    GPIOB->BCR = GPIO_Pin_15;    /* IOIS16 = LOW (16-bit) */
-
-    /* PA2 (READY): output push-pull, drive HIGH (card ready) */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);   /* READY = HIGH */
-
-    /* PA1 (SPIRAM CS): output push-pull, drive HIGH (deasserted) */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-    GPIO_WriteBit(GPIOA, GPIO_Pin_1, Bit_SET);
-    RCC_APB2PeriphClockCmd (RCC_APB2Periph_SPI1, ENABLE);
-    GPIO_Spi_Init(SPI1, GPIOA, GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7, SPI_BaudRatePrescaler_4);  /* SCK, MISO, MOSI */
-
-   
-    /* PA9 (USART1_TX): alternate function push-pull */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    /* PA10 (USART1_RX): input floating */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    /* LEDx + APA102 CLK/DATA: output push-pull */
-    GPIO_InitStructure.GPIO_Pin = LED1_Pin | LED2_Pin | LED_CLK_Pin | LED_DO_Pin;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
-    /* CLK and DATA idle low */
-    GPIOC->BCR = LED_CLK_Pin | LED_DO_Pin;
 
-    /* EXTI6: PB6 (UDS/CE1), falling edge */
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource6);
+    /* PA8 (WAIT): output push-pull, drive HIGH (no wait states) */
+    GPIO_InitStructure.GPIO_Pin = WAIT_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
+    GPIO_Init(WAIT_GPIO_Port, &GPIO_InitStructure);
+    WAIT_GPIO_Port->BSHR = WAIT_Pin;      /* WAIT = HIGH */
+
+    /* PA9 (READY): output push-pull, drive HIGH (card ready) */
+    GPIO_InitStructure.GPIO_Pin = READY_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
+    GPIO_Init(READY_GPIO_Port, &GPIO_InitStructure);
+    READY_GPIO_Port->BSHR = READY_Pin;    /* READY = HIGH */
+
+    /* PA10 (IOIS16): output push-pull (LOW = 16-bit port) */
+    GPIO_InitStructure.GPIO_Pin = IOCS16_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
+    GPIO_Init(IOCS16_GPIO_Port, &GPIO_InitStructure);
+    IOCS16_GPIO_Port->BCR = IOCS16_Pin;   /* IOIS16 = LOW (16-bit) */
+
+    /* PA15 (RESET from Gayle): input pull-up, EXTI15 below */
+    GPIO_InitStructure.GPIO_Pin = RESET_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(RESET_GPIO_Port, &GPIO_InitStructure);
+
+    /* SD card on SPI1 default pins (PA5 SCK, PA6 MISO, PA7 MOSI).
+     * PCLK2 = 200 MHz, prescaler 16 -> 12.5 MHz (SD spec allows 25). */
+    RCC_PB2PeriphClockCmd(RCC_PB2Periph_SPI1, ENABLE);
+    GPIO_Spi_Init(SPI1, GPIOA, SD_CLK_Pin | SD_MOSI_Pin, SPI_BaudRatePrescaler_16);
+    /* MISO as input pull-up — holds MISO high when SD card releases the bus */
+    GPIO_InitStructure.GPIO_Pin = SD_MISO_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
+    GPIO_Init(SD_MISO_GPIO_Port, &GPIO_InitStructure);
+
+    /* PC4 (SD CS): output push-pull, drive HIGH (deasserted) */
+    GPIO_InitStructure.GPIO_Pin = SD_SNSS_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
+    GPIO_Init(SD_SNSS_GPIO_Port, &GPIO_InitStructure);
+    SD_SNSS_GPIO_Port->BSHR = SD_SNSS_Pin;
+
+    /* PC5 (SD CD): input pull-up (LOW = card inserted) */
+    GPIO_InitStructure.GPIO_Pin = SD_CD_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(SD_CD_GPIO_Port, &GPIO_InitStructure);
+
+    /* USART1 remapped to PB6 (TX) / PB7 (RX) — PA9/PA10 are READY and
+     * IOIS16 on this board. */
+    GPIO_PinRemapConfig(GPIO_PartialRemap1_USART1, ENABLE);  /* TX=PB6, RX=PB7 */
+    GPIO_InitStructure.GPIO_Pin = USART_TX_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_High;
+    GPIO_Init(USART_TX_GPIO_Port, &GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin = USART_RX_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(USART_RX_GPIO_Port, &GPIO_InitStructure);
+
+    /* Status LEDs PB0/PB1 + APA102 CLK/DATA on PC0/PC1: output push-pull */
+    GPIO_InitStructure.GPIO_Pin = LED1_Pin | LED2_Pin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Low;
+    GPIO_Init(LED1_GPIO_Port, &GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin = LED_CLK_Pin | LED_DO_Pin;
+    GPIO_Init(LED_CLK_GPIO_Port, &GPIO_InitStructure);
+    /* CLK and DATA idle low */
+    LED_CLK_GPIO_Port->BCR = LED_CLK_Pin | LED_DO_Pin;
+
+    /* EXTI6: PC6 (CE1/UDS), falling edge */
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource6);
     EXTI_InitStructure.EXTI_Line = EXTI_Line6;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
 
-    /* EXTI9: PB9 (LDS/CE2), falling edge */
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource9);
+    /* EXTI9: PC9 (CE2/LDS), falling edge */
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource9);
     EXTI_InitStructure.EXTI_Line = EXTI_Line9;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
 
-    /* EXTI13: PB13 (RESET), falling edge */
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource13);
-    EXTI_InitStructure.EXTI_Line = EXTI_Line13;
+    /* EXTI15: PA15 (RESET), falling edge */
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource15);
+    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
-
-    /* PA15 (SD CD): input pull-up (LOW = card inserted) */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-     /* PC9 (SD CS): output push-pull, drive HIGH (deasserted) */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
-    GPIO_WriteBit(GPIOC, GPIO_Pin_9, Bit_SET);
-
-    /* SPI3 remap: PC10=SCK, PC11=MISO, PC12=MOSI */
-    GPIO_PinRemapConfig(GPIO_Remap_SPI3, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
-    GPIO_Spi_Init(SPI3, GPIOC, GPIO_Pin_10 | GPIO_Pin_12, SPI_BaudRatePrescaler_8);  /* SCK, MOSI as AF_PP */
-    /* MISO as input pull-up — holds MISO high when SD card releases the bus */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
 }

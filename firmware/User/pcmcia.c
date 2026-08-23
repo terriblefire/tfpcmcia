@@ -1,6 +1,6 @@
 #include "pcmcia.h"
 #include "gpio.h"
-#include "spiram.h"
+#include "psram.h"
 
 #define NDEBUG
 
@@ -17,12 +17,13 @@
 #define SD_CS_HIGH() {GPIO_SafeSetBits(SD_SNSS_GPIO_Port, SD_SNSS_Pin); GPIO_SafeSetBits(LED2_GPIO_Port, LED2_Pin);}
 #define SD_CS_LOW()  {GPIO_SafeResetBits(SD_SNSS_GPIO_Port, SD_SNSS_Pin); GPIO_SafeResetBits(LED2_GPIO_Port, LED2_Pin);}
 
+/* nop counts tuned for HCLK = 200 MHz (were 10/14 at 144 MHz) */
 #define DELAY_100NS() do { \
-    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
+    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
 #define DELAY_140NS() do { \
-    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
+    __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"); \
 } while (0)
 
 typedef struct {
@@ -39,10 +40,10 @@ typedef struct {
     uint32_t AccessMask; /* 0x001980   — OE | WE | IOR | IOW                  */
     uint32_t IorMask;    /* 0x000800   — IOR bit                               */
     uint32_t IowMask;    /* 0x001000   — IOW bit                               */
-    /* SPIRAM address space */
-    uint32_t SpiRamBase; /* 0x020000   — SPIRAM region start                  */
-    uint32_t SpiRamMask; /* 0x3FFFFE   — word-align mask within 4 MB SPIRAM   */
-    uint32_t SpiRamSize; /* 0x400000   — SPIRAM upper bound (exclusive)        */
+    /* PSRAM (on-chip, mapped at 0x8000_0000) address space */
+    uint32_t SpiRamBase; /* 0x020000   — RAM region start                      */
+    uint32_t SpiRamMask; /* 0x3FFFFE   — word-align mask within the 4 MB window */
+    uint32_t SpiRamSize; /* 0x400000   — RAM window upper bound (exclusive)    */
 } PcmciaConstants;
 
 static PcmciaConstants K __attribute__((section(".sdata")));
@@ -77,11 +78,11 @@ static uint8_t sd_rx_byte = 0xFF;
 
 static __attribute__((always_inline)) uint8_t sd_xfer(uint8_t data) {
 
-    while (MYSPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_TXE) == RESET) {};
-    SPI3->DATAR = data;
-    while (MYSPI_I2S_GetFlagStatus (SPI3, SPI_I2S_FLAG_RXNE) == RESET) {};
-    sd_rx_byte = SPI3->DATAR;
-    while (MYSPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_BSY) == SET) {};  // wait for shift register idle
+    while (MYSPI_I2S_GetFlagStatus (SPI1, SPI_I2S_FLAG_TXE) == RESET) {};
+    SPI1->DATAR = data;
+    while (MYSPI_I2S_GetFlagStatus (SPI1, SPI_I2S_FLAG_RXNE) == RESET) {};
+    sd_rx_byte = SPI1->DATAR;
+    while (MYSPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET) {};  // wait for shift register idle
     return sd_rx_byte;
 }
 
@@ -127,7 +128,7 @@ static uint8_t cis_data[] = {
 
 static uint8_t pcmica_board_ctrl = 0;
 
-uint32_t led_fb[7];               /* RGBX pixels; host writes via IO writes */
+uint32_t led_fb[PCMCIA_NUM_LEDS]; /* RGBX pixels; host writes via IO writes */
 
 static __attribute__((always_inline)) uint16_t PCMCIA_ROM_Read(uint32_t addr) {
     uint32_t offset = addr & K.RomMask;  /* word-align within 128KB ROM */
@@ -167,11 +168,11 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
     uint32_t byte_offset = addr & 0xFFFFu;
     uint8_t b = (uint8_t)(data >> 8);  /* driver byte is on upper lane */
 
-    if (byte_offset >= REG_LED_FB_BASE && byte_offset < REG_LED_FB_BASE + 28u) {
+    if (byte_offset >= REG_LED_FB_BASE && byte_offset < REG_LED_FB_BASE + 4u * PCMCIA_NUM_LEDS) {
         /* Each pixel = 4 bytes, accessed as two consecutive 16-bit writes.
          * word_idx 0,1 = pixel 0 (R,G then B,X); 2,3 = pixel 1; etc. */
-        uint8_t word_idx = (uint8_t)((byte_offset - REG_LED_FB_BASE) >> 1); /* 0..13 */
-        uint8_t pix_idx  = word_idx >> 1;                                    /* 0..6  */
+        uint8_t word_idx = (uint8_t)((byte_offset - REG_LED_FB_BASE) >> 1); /* 0..15 */
+        uint8_t pix_idx  = word_idx >> 1;                                    /* 0..7  */
         if ((word_idx & 1u) == 0u) {
             /* high word: data[15:8]=R, data[7:0]=G */
             led_fb[pix_idx] = (led_fb[pix_idx] & 0x0000FFFFu) | ((uint32_t)data << 16);
@@ -204,18 +205,18 @@ void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatte
 
 void PCMCIA_Handler(void) {
     /* Assert /WAIT immediately — stalls the Amiga until we deassert. */
-    GPIO_SafeResetBits(GPIOB, GPIO_Pin_14);
+    GPIO_SafeResetBits(WAIT_GPIO_Port, WAIT_Pin);
     EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
     /* Glitch filter: CE1/CE2 are pure address-decode outputs from Gayle.
      * Any address-bus transition through the PCMCIA window fires a spurious
      * edge.  Three reads ≈ 21 ns at 144 MHz confirm CE is stable.
      * Use return (not goto exit) so /WAIT is never touched for fake cycles. */
-    uint16_t ctrl = (uint16_t)GPIOB->INDR;
+    uint16_t ctrl = (uint16_t)GPIOC->INDR;
     if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
 
-    // get the address from the ports
-    uint32_t addr  = ((uint32_t)(ctrl & 0x003Fu) << 16) | (uint16_t)GPIOE->INDR;
+    // reassemble the 22-bit address (split across PE and PB, see pcmcia.h)
+    uint32_t addr = PCMCIA_ADDR((uint32_t)GPIOE->INDR, (uint32_t)GPIOB->INDR);
     // read the XIP registers - this also adds a small delay which helps filter out glitches.
     uint16_t memory_value = PCMCIA_Reg_Read(addr);
     GPIOD->OUTDR = BUS16(memory_value);
@@ -223,7 +224,7 @@ void PCMCIA_Handler(void) {
     EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
     // recheck the control lines to see if they are still active, if not, this was a glitch and we should exit immediately without touching /WAIT
-    ctrl = (uint16_t)GPIOB->INDR;
+    ctrl = (uint16_t)GPIOC->INDR;
     if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
 
     // reg cycles can just bail and stay on the bus now. they cannot wait. 
@@ -240,7 +241,7 @@ void PCMCIA_Handler(void) {
      * without the timeout the CH32 would hang until its watchdog fires. */
     uint32_t spin = 32u;
     do {
-        ctrl = (uint16_t)GPIOB->INDR;
+        ctrl = (uint16_t)GPIOC->INDR;
     } while ((ctrl & K.AccessMask) == K.AccessMask && --spin);
     if (!spin) goto exit;
     
@@ -258,7 +259,7 @@ void PCMCIA_Handler(void) {
             }
             else 
             {
-                GPIOD->OUTDR = BUS16(SPIRAM_Read16(addr & K.SpiRamMask));
+                GPIOD->OUTDR = BUS16(PSRAM_Read16(addr & K.SpiRamMask));
             }
         }
 
@@ -275,15 +276,15 @@ void PCMCIA_Handler(void) {
 
         if ((ctrl & STROBE_MASK) == 0)
         {
-            SPIRAM_Write16(addr, data);
+            PSRAM_Write16(addr, data);
         }
         else if ((ctrl & UDS_MASK) == 0)
         {
-            SPIRAM_Write8(addr, (data >> 8));
+            PSRAM_Write8(addr, (data >> 8));
         }
         else if ((ctrl & LDS_MASK) == 0)
         {
-            SPIRAM_Write8(addr | 0x01, data & 0xFF);
+            PSRAM_Write8(addr | 0x01, data & 0xFF);
         }
     }
     else if ((ctrl & K.IowMask) == 0)
@@ -319,13 +320,13 @@ void PCMCIA_Handler(void) {
         DELAY_100NS();
     }
 exit:
-    GPIO_SafeSetBits(GPIOB, GPIO_Pin_14);
+    GPIO_SafeSetBits(WAIT_GPIO_Port, WAIT_Pin);
 }
 
 void PCMCIA_ResetHandler(void) __attribute__((interrupt, section(".ramtext")));
 
 void PCMCIA_ResetHandler(void) {
-    EXTI->INTFR = EXTI_Line13;
+    EXTI->INTFR = EXTI_Line15;
 
     pcmica_board_ctrl = 0;
     SD_CS_HIGH();
@@ -356,10 +357,9 @@ void PCMCIA_Init(void) {
     K.SpiRamMask = 0x3FFFFEu;
     K.SpiRamSize = 0x400000u;
 
-    GPIO_SetBits(GPIOB, GPIO_Pin_14); // !WAIT
-    GPIO_SetBits(GPIOA, GPIO_Pin_2); // READY
+    GPIO_SetBits(WAIT_GPIO_Port, WAIT_Pin);   // !WAIT deasserted
+    GPIO_SetBits(READY_GPIO_Port, READY_Pin);  // READY
   
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     SetVTFIRQ((u32)PCMCIA_Handler, EXTI9_5_IRQn, 0, ENABLE);
     NVIC_SetPriority(EXTI9_5_IRQn, 0);
     NVIC_EnableIRQ(EXTI9_5_IRQn);
@@ -374,8 +374,8 @@ void RAMFUNC PCMCIA_PollLoop(void)
 
     while (1) 
     {
-        ctrl = (uint16_t)GPIOB->INDR;
-        
+        ctrl = (uint16_t)GPIOC->INDR;
+
         if ((ctrl & STROBE_MASK) != STROBE_MASK)
         {
             PCMCIA_Handler();

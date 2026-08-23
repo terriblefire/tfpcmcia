@@ -2,6 +2,7 @@
 #include "gpio.h"
 #include "led.h"
 #include "pcmcia.h"
+#include "psram.h"
 
 
 int main(void) {
@@ -12,8 +13,14 @@ int main(void) {
     USART1_Init(115200);
     PCMCIA_Init();
 
-    printf("tfpcmcia v0.3ready\r\n");
-    printf("Testing sdcard\r\n");
+    printf("tfpcmcia v0.4 (CH32V467) ready\r\n");
+
+    /* Probe printed AFTER the banner: if the 0x8000_0000 window is not
+     * accessible out of reset this access hangs or faults, and the last
+     * UART line tells us exactly where. */
+    PSRAM_Init();
+    printf("PSRAM probe: ");
+    printf(PSRAM_Probe() ? "OK\r\n" : "FAILED\r\n");
 
     LED2_GPIO_Port->OUTDR ^= LED2_Pin;
 

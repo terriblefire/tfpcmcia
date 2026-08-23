@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "stdio.h"
-#include "ch32v30x.h"
+#include "ch32v4x7.h"
 
 void Delay_Init(void);
 void Delay_Us(uint32_t n);

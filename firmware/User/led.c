@@ -1,5 +1,6 @@
 #include "led.h"
 #include "gpio.h"
+#include "pcmcia.h"   /* PCMCIA_NUM_LEDS */
 
 #define CLK_H() (LED_CLK_GPIO_Port->BSHR = LED_CLK_Pin)
 #define CLK_L() (LED_CLK_GPIO_Port->BCR  = LED_CLK_Pin)
@@ -31,7 +32,7 @@ void APA102_GreenRamp(uint16_t frame)
     uint8_t g = (frame >= RAMP_FRAMES) ? 0xFFu : (uint8_t)(frame * 255u / RAMP_FRAMES);
 
     send_u32(0x00000000);               /* start frame */
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < PCMCIA_NUM_LEDS; i++) {
         send_byte(0xFF);                /* global brightness = max */
         send_byte(0x00);                /* blue  */
         send_byte(g);                   /* green */
@@ -40,9 +41,9 @@ void APA102_GreenRamp(uint16_t frame)
     send_u32(0xFFFFFFFF);               /* end frame */
 }
 
-#define KITT_NUM_LEDS  7
+#define KITT_NUM_LEDS  PCMCIA_NUM_LEDS
 #define KITT_FRAMES    1024
-#define KITT_STEPS     12   /* 2*(NUM_LEDS-1) */
+#define KITT_STEPS     (2 * (KITT_NUM_LEDS - 1))
 
 static uint8_t kitt_br(int dist)
 {
@@ -57,7 +58,7 @@ static uint8_t kitt_br(int dist)
 void APA102_Kitt(uint16_t frame)
 {
     uint16_t step = (uint16_t)((uint32_t)(frame % KITT_FRAMES) * KITT_STEPS / KITT_FRAMES);
-    int pos = (step <= 6) ? (int)step : (int)(KITT_STEPS - step);
+    int pos = (step < KITT_NUM_LEDS) ? (int)step : (int)(KITT_STEPS - step);
 
     send_u32(0x00000000);               /* start frame */
     for (int i = 0; i < KITT_NUM_LEDS; i++) {
@@ -75,7 +76,7 @@ void APA102_Kitt(uint16_t frame)
 void APA102_FB(const uint32_t *pixels)
 {
     send_u32(0x00000000);               /* start frame */
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < PCMCIA_NUM_LEDS; i++) {
         uint8_t r = (uint8_t)(pixels[i] >> 24);
         uint8_t g = (uint8_t)(pixels[i] >> 16);
         uint8_t b = (uint8_t)(pixels[i] >>  8);
@@ -92,10 +93,10 @@ void APA102_AmberBlink(uint16_t frame)
     uint8_t on = (frame % 600u) < 300u;
 
     send_u32(0x00000000);               /* start frame */
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < PCMCIA_NUM_LEDS; i++) {
         send_byte(0xFF);                /* global brightness = max */
         send_byte(0x00);                /* blue  */
-        uint8_t lit = (on ? i < 4 : i >= 4);
+        uint8_t lit = (on ? i < PCMCIA_NUM_LEDS / 2 : i >= PCMCIA_NUM_LEDS / 2);
         send_byte(lit ? 0x80 : 0x00);             /* green */
         send_byte(lit ? 0xFF : 0x00);             /* red   */
     }

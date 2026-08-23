@@ -6,8 +6,11 @@ PROVIDE( _stack_size = __stack_size );
 
 MEMORY
 {
+	/* CH32V467: flash/RAM split set by option bytes (RM Table 32-4).
+	   512K/200K and 576K/136K are both valid; these sizes fit either.
+	   The V4x7 SDK reserves the first 1K of SRAM - follow it. */
 	FLASH (rx)  : ORIGIN = 0x00000000, LENGTH = 512K
-	RAM (xrw)   : ORIGIN = 0x20000000, LENGTH = 64K
+	RAM (xrw)   : ORIGIN = 0x20000000 + 1024, LENGTH = 136K - 1K
 }
 
 SECTIONS

@@ -37,11 +37,11 @@ void Delay_Ms(uint32_t n) {
     SysTick->CTLR &= ~(1 << 0);
 }
 
-/* USART1 on PA9 (TX) / PA10 (RX) — GPIO already configured in gpio.c */
+/* USART1 remapped to PB6 (TX) / PB7 (RX) — GPIO + remap configured in gpio.c */
 void USART1_Init(uint32_t baudrate) {
     USART_InitTypeDef USART_InitStructure = {0};
 
-    RCC->APB2PCENR |= RCC_APB2Periph_USART1;
+    RCC->PB2PCENR |= RCC_PB2Periph_USART1;
 
     USART_InitStructure.USART_BaudRate            = baudrate;
     USART_InitStructure.USART_WordLength          = USART_WordLength_8b;
