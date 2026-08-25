@@ -34,8 +34,13 @@
                            (((b) << 16) & ADDR_B2_MASK))
 
 /* Gayle swaps PCMCIA D0-D7 <-> D8-D15 relative to the 68000 bus.
- * Apply to every 16-bit value written to GPIOD->OUTDR. */
-#define BUS16(v) ((((v) & 0xFF) << 8) | (((v) >> 8) & 0xFF))
+ * Apply to every 16-bit value written to GPIOD->OUTDR.
+ * An inline function, not a macro: a macro evaluates its argument twice,
+ * which for a volatile operand (GPIOD->INDR, a PSRAM load) emits two bus
+ * reads back to back on the ISR hot path. */
+static __attribute__((always_inline)) inline uint16_t BUS16(uint16_t v) {
+    return (uint16_t)((v << 8) | (v >> 8));
+}
 
 #define PCMCIA_NUM_LEDS 8u
 
