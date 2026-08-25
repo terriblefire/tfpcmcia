@@ -7,6 +7,7 @@ VENV_MARKER = $(VENV_DIR)/.installed
 PYTHON = $(VENV_DIR)/bin/python
 PIP = $(VENV_DIR)/bin/pip
 NETLIST_SCRIPT = generate_netlist.py
+CHECK_POLYGONS_SCRIPT = check_polygons.py
 
 # Find the .sch file
 SCH_FILE = $(wildcard *.sch)
@@ -54,6 +55,11 @@ $(DRILL_CAMFILE): $(CAMFILE)
 .PHONY: pcf
 pcf: $(PCF_FILE)
 
+# Board sanity checks (run before Gerber generation)
+.PHONY: check
+check: $(BOARD) $(CHECK_POLYGONS_SCRIPT)
+	python3 $(CHECK_POLYGONS_SCRIPT) $(BOARD)
+
 # CAM output (Gerber generation) targets
 .PHONY: gerbers camfiles
 gerbers: $(GERBERS).zip
@@ -65,7 +71,9 @@ $(GERBERS).zip: $(GERBERS)
 	zip -r $@ $(GERBERS)/* $(GERBERS)/*/*
 	@echo "Gerber archive created: $@"
 
-$(GERBERS): $(BOARD) $(CAMFILE)
+$(GERBERS): $(BOARD) $(CAMFILE) $(CHECK_POLYGONS_SCRIPT)
+	@echo "Checking $(BOARD) for zero-width pour polygons..."
+	python3 $(CHECK_POLYGONS_SCRIPT) $(BOARD)
 	@echo "Generating Gerbers for $(BOARD) using $(CAMFILE)..."
 	mkdir -p $(GERBERS)
 	$(EAGLE_DOCKER) -X -dCAMJOB -j$(CAMFILE) -o$(GERBERS) $(BOARD)
@@ -143,6 +151,7 @@ help:
 	@echo "Targets:"
 	@echo "  all           - Generate Everything"
 	@echo "  netlist       - Generate netlist from schematic"
+	@echo "  check         - Check board for zero-width pour polygons"
 	@echo "  gerbers       - Generate Gerber files and create ZIP archive"
 	@echo "  camfiles      - Generate Gerber files only (no ZIP)"
 	@echo "  pdf           - Generate PDF schematic (using Docker)"
