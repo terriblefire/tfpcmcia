@@ -8,7 +8,7 @@ CC      = riscv-none-embed-gcc
 OBJCOPY = riscv-none-embed-objcopy
 SIZE    = riscv-none-embed-size
 
-MCU_FLAGS = -march=rv32imafc -mabi=ilp32 -msmall-data-limit=8
+MCU_FLAGS = -march=rv32imac -mabi=ilp32 -msmall-data-limit=8
 
 CFLAGS  = $(MCU_FLAGS) -Ofast -std=gnu99 \
           -ffunction-sections -fdata-sections \

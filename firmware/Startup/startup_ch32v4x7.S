@@ -362,8 +362,11 @@ handle_reset:
 /* Enable interrupt nesting and hardware stack */
     li t0, 0x07
     csrw 0x804, t0
-/* Enable Vector operation and global interrupt, configure privileged mode */
-   	li t0, 0x688           
+/* Enable Vector operation and global interrupt, stay in machine mode.
+ * The SDK's 0x688 drops to user mode (MPP=0); with no PMP entries the
+ * V467 core then faults fetching main (mcause=1). No FPU on this core
+ * (misa has no F), so FS is left clear. */
+   	li t0, 0x1E88
    	csrw mstatus, t0
 /* Configure the interrupt vector table recognition mode and entry address mode */
  	la t0, _start
