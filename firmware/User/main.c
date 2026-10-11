@@ -22,6 +22,11 @@ int main(void) {
     printf("PSRAM probe: ");
     printf(PSRAM_Probe() ? "OK\r\n" : "FAILED\r\n");
 
+    RCC->PB1PCENR |= RCC_PB1Periph_PWR;
+    printf("VDD18 level %lu, VDDK level %lu\r\n",
+           (EXTEN->EXTEN_CTR & EXTEN_LDO18_ADJ) ? 1UL : 0UL,
+           (PWR->CTLR & PWR_CTLR_LDOVDDK) >> 24);
+
     LED2_GPIO_Port->OUTDR ^= LED2_Pin;
 
     uint16_t frame = 0;
@@ -61,10 +66,13 @@ int main(void) {
                 printf("-- trace restart (reset) --\r\n");
                 printed = 0;
             }
+            /* gap = ns since previous handler entry, isr = ns entry->exit */
             for (int k = 0; k < 4 && printed < n; k++, printed++) {
                 PcmciaTrace t = pcmcia_trace[printed];
-                printf("T%03lu k%lu a=%06lx c=%04x d=%04x\r\n", printed,
-                       t.addr >> 24, t.addr & 0x3FFFFF, t.ctrl, t.data);
+                uint32_t gap = printed ? (t.t0 - pcmcia_trace[printed - 1].t0) * 5 : 0;
+                printf("T%03lu k%lu a=%06lx c=%04x d=%04x gap=%lu isr=%lu\r\n", printed,
+                       t.addr >> 24, t.addr & 0x3FFFFF, t.ctrl, t.data,
+                       gap, (t.t1 - t.t0) * 5);
             }
         }
 #endif

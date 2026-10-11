@@ -132,6 +132,7 @@ volatile uint32_t pcmcia_stats[PCMCIA_ST_COUNT];
 #if PCMCIA_TRACE
 volatile PcmciaTrace pcmcia_trace[PCMCIA_TRACE_LEN];
 volatile uint32_t pcmcia_trace_idx;
+static uint32_t pcmcia_trace_armed;
 #endif
 
 uint32_t led_fb[PCMCIA_NUM_LEDS]; /* RGBX pixels; host writes via IO writes */
@@ -214,6 +215,10 @@ void PCMCIA_Handler(void) {
     uint32_t addr = 0;
     /* Assert /WAIT immediately — stalls the Amiga until we deassert. */
     GPIO_SafeResetBits(WAIT_GPIO_Port, WAIT_Pin);
+#if PCMCIA_TRACE
+    uint32_t t0;
+    __asm volatile ("csrr %0, mcycle" : "=r"(t0));
+#endif
     EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
 
     /* Glitch filter: CE1/CE2 are pure address-decode outputs from Gayle.
@@ -221,6 +226,9 @@ void PCMCIA_Handler(void) {
      * edge.  Three reads ≈ 21 ns at 144 MHz confirm CE is stable.
      * Use return (not goto exit) so /WAIT is never touched for fake cycles. */
     uint16_t ctrl = (uint16_t)GPIOC->INDR;
+#if PCMCIA_TRACE
+    uint16_t ctrl0 = ctrl;
+#endif
     if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
     kind = PCMCIA_ST_GLITCH2;
 
@@ -339,11 +347,18 @@ exit:
     /* counted after /WAIT is released so bus timing is unchanged */
     pcmcia_stats[kind]++;
 #if PCMCIA_TRACE
+    uint32_t t1;
+    __asm volatile ("csrr %0, mcycle" : "=r"(t1));
+    if (!pcmcia_trace_armed && kind == PCMCIA_ST_MEM_RD &&
+        addr >= PCMCIA_TRACE_TRIG_LO && addr < PCMCIA_TRACE_TRIG_HI)
+        pcmcia_trace_armed = 1;
     uint32_t ti = pcmcia_trace_idx;
-    if (kind > PCMCIA_ST_GLITCH2 && ti < PCMCIA_TRACE_LEN) {
+    if (pcmcia_trace_armed && ti < PCMCIA_TRACE_LEN) {
         pcmcia_trace[ti].addr = addr | (kind << 24);
-        pcmcia_trace[ti].ctrl = ctrl;
+        pcmcia_trace[ti].ctrl = ctrl0;
         pcmcia_trace[ti].data = (uint16_t)GPIOD->OUTDR;
+        pcmcia_trace[ti].t0 = t0;
+        pcmcia_trace[ti].t1 = t1;
         pcmcia_trace_idx = ti + 1;
     }
 #endif
@@ -359,6 +374,7 @@ void PCMCIA_ResetHandler(void) {
     pcmcia_stats[PCMCIA_ST_RESET]++;
 #if PCMCIA_TRACE
     pcmcia_trace_idx = 0;
+    pcmcia_trace_armed = 0;
 #endif
 }
 

@@ -48,12 +48,15 @@ HUNK_END	equ	$3F2
 
 ; exec LVO offsets
 _LVOAllocMem	equ	-198
+_LVOAddMemList	equ	-618
 _LVOInitResident equ	-102
 _LVOCacheClearU	equ	-636
 _LVOCacheControl equ	-648
 
 ; Memory flags
 MEMF_PUBLIC	equ	$0001
+MEMF_CHIP	equ	$0002
+MEMF_FAST	equ	$0004
 MEMF_CLEAR	equ	$10000
 
 MAX_HUNKS	equ	8
@@ -100,9 +103,50 @@ Init:
 	lea	str_tf(pc),a0
 	bsr	ser_puts
 
+	ifd	TESTKIT
+	;-------------------------------------------------------------------
+	; Diagnostic build (vasm -DTESTKIT): give the card RAM to Exec, then
+	; run Amiga Test Kit, which finds it via the Exec MemList. Testkit
+	; writes into its own image before relocating itself, so it is
+	; copied to chip RAM first: writes to the ROM window are not kept.
+	;-------------------------------------------------------------------
+	move.b	#1,BOARD_CTRL
+	lea	str_testkit(pc),a0
+	bsr	ser_puts
+	move.l	#$3E0000,d0		; $620000-$9FFFFF
+	moveq	#MEMF_PUBLIC|MEMF_FAST,d1
+	moveq	#0,d2
+	move.l	#$620000,a0
+	lea	str_memname(pc),a1
+	move.l	a5,a6
+	jsr	_LVOAddMemList(a6)
+
+	move.l	#TestKitEnd-TestKit,d0
+	moveq	#MEMF_CHIP,d1
+	jsr	_LVOAllocMem(a6)
+	tst.l	d0
+	beq.s	.tkHang
+	move.l	d0,a3
+	move.l	d0,a1
+	lea	TestKit(pc),a0
+	move.l	#(TestKitEnd-TestKit+3)/4,d0
+.tkCopy:
+	move.l	(a0)+,(a1)+
+	subq.l	#1,d0
+	bne.s	.tkCopy
+	jsr	_LVOCacheClearU(a6)
+	jmp	(a3)			; never returns
+.tkHang:
+	lea	str_nomem(pc),a0
+	bsr	ser_puts
+	bra.s	.tkHang
+	endc
+
 	move.b  #2,BOARD_CTRL
 
+	ifnd	TESTKIT
 	bsr SimonTopDog
+	endc
 
 	; Disable all CPU caches
 	moveq	#0,d0			; cacheBits = 0 (all off)
@@ -410,6 +454,10 @@ str_badhunk:	dc.b	"bad hunk",$0A,0
 str_nort:	dc.b	"no RT",$0A,0
 str_nomem:	dc.b	"no mem",$0A,0
 str_initres:	dc.b	"IR",$0A,0
+	ifd	TESTKIT
+str_testkit:	dc.b	"TESTKIT: adding $620000-$9FFFFF, starting Amiga Test Kit",$0A,0
+str_memname:	dc.b	"PCMCIA SRAM",0
+	endc
 	even
 
 ;---------------------------------------------------------------------------
@@ -446,8 +494,15 @@ ser_puts:
 DeviceBinary:
 	incbin	"tfpcmcia.device"
 DeviceBinaryEnd:
+	ifd	TESTKIT
+	cnop	0,4
+TestKit:
+	incbin	"testkit.bin"
+TestKitEnd:
+	else
 SimonTopDog:
 	incbin	"std_lz4.bin"
+	endc
 
 EndSkip:
 

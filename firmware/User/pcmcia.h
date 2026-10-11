@@ -63,9 +63,14 @@ extern volatile uint32_t pcmcia_stats[PCMCIA_ST_COUNT];
 #endif
 
 #if PCMCIA_TRACE
-/* First cycles after each Amiga reset: addr | kind<<24, ctrl lines, GPIOD->OUTDR */
-#define PCMCIA_TRACE_LEN 128u
-typedef struct { uint32_t addr; uint16_t ctrl; uint16_t data; } PcmciaTrace;
+/* 128 handler runs (glitches included) starting at the first memory read
+ * in [TRIG_LO, TRIG_HI), re-armed by each Amiga reset. t0/t1 are mcycle
+ * (5 ns) at handler entry (after /WAIT asserted) and exit (/WAIT released).
+ * addr | kind<<24, ctrl lines at entry, GPIOD->OUTDR at exit. */
+#define PCMCIA_TRACE_LEN     128u
+#define PCMCIA_TRACE_TRIG_LO 0x040000u   /* Amiga $640000 */
+#define PCMCIA_TRACE_TRIG_HI 0x140000u   /* Amiga $740000 */
+typedef struct { uint32_t addr; uint16_t ctrl; uint16_t data; uint32_t t0, t1; } PcmciaTrace;
 extern volatile PcmciaTrace pcmcia_trace[PCMCIA_TRACE_LEN];
 extern volatile uint32_t pcmcia_trace_idx;
 #endif

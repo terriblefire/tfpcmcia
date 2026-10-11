@@ -16,6 +16,13 @@ void PSRAM_Init(void) {
     PSRAMInitTypeDef PSRAMInitStruct = {0};
     PSRAMTimingInitTypeDef PSRAMTimingStruct = {0};
 
+    /* Raise VDD18, the PSRAM supply, to its higher level (PWR_VDD18_Level1)
+     * before bringing the controller up: the PSRAM runs at its 200 MHz
+     * maximum here, which other 200 MHz designs on this chip found needs
+     * the extra voltage. */
+    EXTEN->EXTEN_CTR |= EXTEN_LDO18_ADJ;
+    Delay_Ms(1);
+
     RCC_HBPeriphClockCmd(RCC_HBPeriph_PSRAM, ENABLE);
 
     PSRAMDeInit();
