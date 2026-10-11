@@ -163,7 +163,10 @@ void SetRdLatency(uint32_t PSRAM_Fre, uint32_t Read_Latency,uint32_t Read_Latenc
     }
     if(Read_Latency_Type==Read_Fixed)
     {
-    PSRAMSetData(Read_Fixed<<5);
+    /* Keep the MR0 read-latency code: writing Read_Fixed<<5 alone resets
+     * it to 0 (66M) while the controller still uses Read_Latency, and
+     * every read then returns the next 16-bit beat. */
+    PSRAMSetData((PSRAM_Fre<<2) | (Read_Fixed<<5));
     PSRAMSetRdLatency(Read_Latency);
     PSRAM_Set_MR_ADDR(CMD_MR_ADDR_0);
     PSRAM_Set_CMD(CMD_MR_WRITE);
