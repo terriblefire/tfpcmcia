@@ -51,6 +51,25 @@ extern volatile uint32_t pcmcia_io_count;
 extern uint32_t led_fb[PCMCIA_NUM_LEDS];
 uint8_t PCMCIA_BoardCtrl(void);
 
+/* Handler outcome counters, readable over serial / debugger */
+enum { PCMCIA_ST_GLITCH, PCMCIA_ST_GLITCH2, PCMCIA_ST_ATTR, PCMCIA_ST_TIMEOUT,
+       PCMCIA_ST_MEM_RD, PCMCIA_ST_MEM_WR, PCMCIA_ST_IO_WR, PCMCIA_ST_IO_RD,
+       PCMCIA_ST_RESET, PCMCIA_ST_COUNT };
+extern volatile uint32_t pcmcia_stats[PCMCIA_ST_COUNT];
+
+/* Bus trace + counter printout on USART1: build with `make TRACE=1`. */
+#ifndef PCMCIA_TRACE
+#define PCMCIA_TRACE 0
+#endif
+
+#if PCMCIA_TRACE
+/* First cycles after each Amiga reset: addr | kind<<24, ctrl lines, GPIOD->OUTDR */
+#define PCMCIA_TRACE_LEN 128u
+typedef struct { uint32_t addr; uint16_t ctrl; uint16_t data; } PcmciaTrace;
+extern volatile PcmciaTrace pcmcia_trace[PCMCIA_TRACE_LEN];
+extern volatile uint32_t pcmcia_trace_idx;
+#endif
+
 void PCMCIA_Init(void);
 void PCMCIA_Handler(void);
 void PCMCIA_ResetHandler(void);

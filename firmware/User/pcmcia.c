@@ -128,6 +128,12 @@ static uint8_t cis_data[] = {
 
 static uint8_t pcmica_board_ctrl = 0;
 
+volatile uint32_t pcmcia_stats[PCMCIA_ST_COUNT];
+#if PCMCIA_TRACE
+volatile PcmciaTrace pcmcia_trace[PCMCIA_TRACE_LEN];
+volatile uint32_t pcmcia_trace_idx;
+#endif
+
 uint32_t led_fb[PCMCIA_NUM_LEDS]; /* RGBX pixels; host writes via IO writes */
 
 static __attribute__((always_inline)) uint16_t PCMCIA_ROM_Read(uint32_t addr) {
@@ -204,6 +210,8 @@ static __attribute__((always_inline)) void PCMCIA_IO_Write(uint32_t addr, uint16
 void PCMCIA_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast"), flatten, section(".ramtext")));
 
 void PCMCIA_Handler(void) {
+    uint32_t kind = PCMCIA_ST_GLITCH;
+    uint32_t addr = 0;
     /* Assert /WAIT immediately — stalls the Amiga until we deassert. */
     GPIO_SafeResetBits(WAIT_GPIO_Port, WAIT_Pin);
     EXTI->INTFR = EXTI_Line6 | EXTI_Line9;
@@ -214,9 +222,10 @@ void PCMCIA_Handler(void) {
      * Use return (not goto exit) so /WAIT is never touched for fake cycles. */
     uint16_t ctrl = (uint16_t)GPIOC->INDR;
     if ((ctrl & STROBE_MASK) == STROBE_MASK) goto exit;
+    kind = PCMCIA_ST_GLITCH2;
 
     // reassemble the 22-bit address (split across PE and PB, see pcmcia.h)
-    uint32_t addr = PCMCIA_ADDR((uint32_t)GPIOE->INDR, (uint32_t)GPIOB->INDR);
+    addr = PCMCIA_ADDR((uint32_t)GPIOE->INDR, (uint32_t)GPIOB->INDR);
     // read the XIP registers - this also adds a small delay which helps filter out glitches.
     uint16_t memory_value = PCMCIA_Reg_Read(addr);
     GPIOD->OUTDR = BUS16(memory_value);
@@ -232,6 +241,7 @@ void PCMCIA_Handler(void) {
     {
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
+        kind = PCMCIA_ST_ATTR;
         goto exit;
     }
 
@@ -243,11 +253,13 @@ void PCMCIA_Handler(void) {
     do {
         ctrl = (uint16_t)GPIOC->INDR;
     } while ((ctrl & K.AccessMask) == K.AccessMask && --spin);
+    kind = PCMCIA_ST_TIMEOUT;
     if (!spin) goto exit;
     
     if ((ctrl & OE_MASK) == 0) 
     {
         // output enable set.
+        kind = PCMCIA_ST_MEM_RD;
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
 
@@ -267,6 +279,7 @@ void PCMCIA_Handler(void) {
     } 
     else if ((ctrl & WE_MASK) == 0)
     {   
+        kind = PCMCIA_ST_MEM_WR;
         GPIOD->CFGLR = K.BusOff;
         GPIOD->CFGHR = K.BusOff;
         DELAY_140NS();
@@ -289,6 +302,7 @@ void PCMCIA_Handler(void) {
     }
     else if ((ctrl & K.IowMask) == 0)
     {
+        kind = PCMCIA_ST_IO_WR;
         GPIOD->CFGLR = K.BusOff;
         GPIOD->CFGHR = K.BusOff;
         DELAY_140NS();
@@ -304,6 +318,7 @@ void PCMCIA_Handler(void) {
     }
     else if ((ctrl & K.IorMask) == 0)
     {
+        kind = PCMCIA_ST_IO_RD;
         // output enable set.
         GPIOD->CFGLR = K.BusOn;
         GPIOD->CFGHR = K.BusOn;
@@ -321,6 +336,17 @@ void PCMCIA_Handler(void) {
     }
 exit:
     GPIO_SafeSetBits(WAIT_GPIO_Port, WAIT_Pin);
+    /* counted after /WAIT is released so bus timing is unchanged */
+    pcmcia_stats[kind]++;
+#if PCMCIA_TRACE
+    uint32_t ti = pcmcia_trace_idx;
+    if (kind > PCMCIA_ST_GLITCH2 && ti < PCMCIA_TRACE_LEN) {
+        pcmcia_trace[ti].addr = addr | (kind << 24);
+        pcmcia_trace[ti].ctrl = ctrl;
+        pcmcia_trace[ti].data = (uint16_t)GPIOD->OUTDR;
+        pcmcia_trace_idx = ti + 1;
+    }
+#endif
 }
 
 void PCMCIA_ResetHandler(void) __attribute__((interrupt, section(".ramtext")));
@@ -330,6 +356,10 @@ void PCMCIA_ResetHandler(void) {
 
     pcmica_board_ctrl = 0;
     SD_CS_HIGH();
+    pcmcia_stats[PCMCIA_ST_RESET]++;
+#if PCMCIA_TRACE
+    pcmcia_trace_idx = 0;
+#endif
 }
 
 void EXTI15_10_IRQHandler(void) __attribute__((interrupt));

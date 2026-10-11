@@ -10,10 +10,13 @@ SIZE    = riscv-none-embed-size
 
 MCU_FLAGS = -march=rv32imac -mabi=ilp32 -msmall-data-limit=8
 
+# make TRACE=1 : PCMCIA bus trace + cycle counters printed on USART1
+TRACE  ?= 0
+
 CFLAGS  = $(MCU_FLAGS) -Ofast -std=gnu99 \
           -ffunction-sections -fdata-sections \
           -Wall -Wno-unused-function \
-          -DUSE_STDPERIPH_DRIVER \
+          -DUSE_STDPERIPH_DRIVER -DPCMCIA_TRACE=$(TRACE) \
           -I User -I Core -I Peripheral/inc
 
 LDFLAGS = $(MCU_FLAGS) \
